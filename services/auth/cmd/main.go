@@ -56,7 +56,7 @@ func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 
 			api := router.Group("/api/v1")
 			{
-				_ = api
+				api.POST("/login", auth.Login)
 			}
 
 			return router
