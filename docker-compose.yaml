@@ -1,0 +1,19 @@
+services:
+  players:
+    build:
+      context: ./
+      args:
+        CGO_ENABLED: 0
+        GO_SERVICE: players
+        BUILD_TYPE: default
+    ports:
+      - "8080:8080"
+  auth:
+    build:
+      context: ./
+      args:
+        CGO_ENABLED: 0
+        GO_SERVICE: auth
+        BUILD_TYPE: default
+    ports:
+      - "8081:8080"

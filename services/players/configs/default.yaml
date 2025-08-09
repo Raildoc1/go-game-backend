@@ -1,0 +1,6 @@
+service:
+  version: 0.0.1
+http:
+  address: :8080
+  shutdown-timeout: 5s
+shutdown-timeout: 5s
