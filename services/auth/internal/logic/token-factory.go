@@ -2,6 +2,7 @@ package logic
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"go-game-backend/pkg/jwtfactory"
 	"time"
 )
@@ -23,14 +24,22 @@ func NewTokensFactory(tokenFactory *jwtfactory.Factory, config Config) *TokensFa
 	}
 }
 
-func (f *TokensFactory) CreateAccessToken(username, sessionToken string) (string, error) {
+func (f *TokensFactory) CreateAccessToken(username, sessionToken string) (tkn string, expiresAt time.Time, err error) {
 	payload := map[string]string{
 		"username": username,
 		"session":  sessionToken,
 	}
-	tkn, err := f.tokenFactory.Generate(f.config.AccessTokenTTL, payload)
+	tkn, expiresAt, err = f.tokenFactory.Generate(f.config.AccessTokenTTL, payload)
 	if err != nil {
-		return "", fmt.Errorf("jwt token generation failed: %w", err)
+		return "", time.Time{}, fmt.Errorf("jwt token generation failed: %w", err)
 	}
-	return tkn, nil
+	return tkn, expiresAt, nil
+}
+
+func (f *TokensFactory) CreateRefreshToken() string {
+	return uuid.New().String()
+}
+
+func (f *TokensFactory) CreateSessionToken() string {
+	return uuid.New().String()
 }

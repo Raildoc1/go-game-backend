@@ -17,10 +17,14 @@ func New(auth *jwtauth.JWTAuth) *Factory {
 	}
 }
 
-func (tf *Factory) Generate(ttl time.Duration, extraClaims map[string]string) (string, error) {
+func (tf *Factory) Generate(
+	ttl time.Duration,
+	extraClaims map[string]string,
+) (tkn string, expiresAt time.Time, err error) {
 	timeNow := time.Now()
+	expiresAt = timeNow.Add(ttl)
 	claims := map[string]any{
-		"exp": timeNow.Add(ttl).Unix(),
+		"exp": expiresAt.Unix(),
 		"iat": timeNow.Unix(),
 	}
 	for k, v := range extraClaims {
@@ -28,7 +32,7 @@ func (tf *Factory) Generate(ttl time.Duration, extraClaims map[string]string) (s
 	}
 	_, tokenString, err := tf.auth.Encode(claims)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate token: %w", err)
+		return "", time.Time{}, fmt.Errorf("failed to generate token: %w", err)
 	}
-	return tokenString, nil
+	return tokenString, expiresAt, nil
 }
