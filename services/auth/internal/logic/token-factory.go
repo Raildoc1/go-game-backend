@@ -24,10 +24,10 @@ func NewTokensFactory(tokenFactory *jwtfactory.Factory, config Config) *TokensFa
 	}
 }
 
-func (f *TokensFactory) CreateAccessToken(username, sessionToken string) (tkn string, expiresAt time.Time, err error) {
-	payload := map[string]string{
-		"username": username,
-		"session":  sessionToken,
+func (f *TokensFactory) CreateAccessToken(userID int64, sessionToken string) (tkn string, expiresAt time.Time, err error) {
+	payload := map[string]any{
+		"userID":  userID,
+		"session": sessionToken,
 	}
 	tkn, expiresAt, err = f.tokenFactory.Generate(f.config.AccessTokenTTL, payload)
 	if err != nil {

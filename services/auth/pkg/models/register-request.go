@@ -1,5 +1,5 @@
 package models
 
-type LoginRequest struct {
+type RegisterRequest struct {
 	LoginToken string `json:"login_token"`
 }

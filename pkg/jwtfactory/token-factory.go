@@ -19,7 +19,7 @@ func New(auth *jwtauth.JWTAuth) *Factory {
 
 func (tf *Factory) Generate(
 	ttl time.Duration,
-	extraClaims map[string]string,
+	extraClaims map[string]any,
 ) (tkn string, expiresAt time.Time, err error) {
 	timeNow := time.Now()
 	expiresAt = timeNow.Add(ttl)

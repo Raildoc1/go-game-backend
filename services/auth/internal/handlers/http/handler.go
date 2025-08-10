@@ -10,7 +10,7 @@ import (
 )
 
 type Logic interface {
-	Login(ctx context.Context, req *models.LoginRequest) (resp *models.LoginResponse, err error)
+	Login(ctx context.Context, req *models.LoginRequest) (resp *models.LoginRespose, err error)
 }
 
 type Handler struct {
