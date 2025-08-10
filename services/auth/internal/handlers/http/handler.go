@@ -1,4 +1,4 @@
-package http
+package httphand
 
 import (
 	"context"
@@ -10,7 +10,9 @@ import (
 )
 
 type Logic interface {
+	Register(ctx context.Context, req *models.RegisterRequest) (resp *models.LoginRespose, err error)
 	Login(ctx context.Context, req *models.LoginRequest) (resp *models.LoginRespose, err error)
+	RefreshToken(ctx context.Context, req *models.RefreshTokenRequest) (resp *models.LoginRespose, err error)
 }
 
 type Handler struct {
@@ -25,6 +27,22 @@ func New(logic Logic, logger *logging.ZapLogger) *Handler {
 	}
 }
 
+func (h *Handler) Register(c *gin.Context) {
+	var req models.RegisterRequest
+	if err := c.BindJSON(&req); err != nil {
+		return
+	}
+
+	resp, err := h.logic.Register(c.Request.Context(), &req)
+	if err != nil {
+		h.logger.ErrorCtx(c.Request.Context(), "failed to register", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
 func (h *Handler) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.BindJSON(&req); err != nil {
@@ -33,7 +51,23 @@ func (h *Handler) Login(c *gin.Context) {
 
 	resp, err := h.logic.Login(c.Request.Context(), &req)
 	if err != nil {
-		h.logger.ErrorCtx(c.Request.Context(), "failed to put item", zap.Error(err))
+		h.logger.ErrorCtx(c.Request.Context(), "failed to login", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) RefreshToken(c *gin.Context) {
+	var req models.RefreshTokenRequest
+	if err := c.BindJSON(&req); err != nil {
+		return
+	}
+
+	resp, err := h.logic.RefreshToken(c.Request.Context(), &req)
+	if err != nil {
+		h.logger.ErrorCtx(c.Request.Context(), "failed to refresh token", zap.Error(err))
 		c.Status(http.StatusInternalServerError)
 		return
 	}

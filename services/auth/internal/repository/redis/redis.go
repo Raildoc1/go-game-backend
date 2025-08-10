@@ -1,0 +1,117 @@
+package redisrepo
+
+import (
+	"context"
+	"fmt"
+	"github.com/redis/go-redis/v9"
+	"go-game-backend/pkg/futils"
+	redisstore "go-game-backend/pkg/redis"
+	"go-game-backend/services/auth/internal/dto"
+	auth "go-game-backend/services/auth/internal/services/auth"
+	"time"
+)
+
+type Repository struct {
+	store *redisstore.Storage
+}
+
+var _ auth.SessionRepository = (*Repository)(nil)
+
+func New(store *redisstore.Storage) *Repository {
+	return &Repository{
+		store: store,
+	}
+}
+
+func (r Repository) DoWithTransaction(ctx context.Context, f futils.CtxF) error {
+	return r.store.DoWithTransaction(ctx, f)
+}
+
+func (r Repository) DoWithPlayerLock(ctx context.Context, userID int64, ttl time.Duration, f futils.CtxF) error {
+	key := fmt.Sprintf("lock:player:%v", userID)
+	err := r.store.DoWithLock(ctx, key, ttl, f)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r Repository) SetSessionToken(ctx context.Context, userID int64, token string, expiresAt time.Time) error {
+	return r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
+		key := fmt.Sprintf("session_token:%v", userID)
+
+		setCmd := cmdable.Set(ctx, key, token, 0)
+		if err := setCmd.Err(); err != nil {
+			return fmt.Errorf("failed to set session token: %w", err)
+		}
+
+		expCmd := cmdable.ExpireAt(ctx, key, expiresAt)
+		if err := expCmd.Err(); err != nil {
+			return fmt.Errorf("failed to set session token expiration time: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func (r Repository) SetRefreshToken(
+	ctx context.Context,
+	token string,
+	sessionInfo dto.SessionInfo,
+	expiresAt time.Time,
+) error {
+	return r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
+		key := fmt.Sprintf("refresh_token:%s", token)
+
+		setRes := cmdable.HSet(ctx, key,
+			"session_token", sessionInfo.SessionToken,
+			"user_id", sessionInfo.UserID)
+		if err := setRes.Err(); err != nil {
+			return fmt.Errorf("redis failed to set session token: %w", err)
+		}
+
+		expRes := cmdable.ExpireAt(ctx, key, expiresAt)
+		if err := expRes.Err(); err != nil {
+			return fmt.Errorf("redis failed to set session token: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func (r Repository) RemoveRefreshToken(ctx context.Context, token string) error {
+	return r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
+		key := fmt.Sprintf("refresh_token:%s", token)
+
+		res := cmdable.Del(ctx, key)
+		if err := res.Err(); err != nil {
+			return fmt.Errorf("redis failed to remove refresh token: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func (r Repository) GetSessionInfo(ctx context.Context, refreshToken string) (dto.SessionInfo, error) {
+	var sessionInfo dto.SessionInfo
+	err := r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
+		key := fmt.Sprintf("refresh_token:%s", refreshToken)
+
+		resCmd := cmdable.HGetAll(ctx, key)
+		if err := resCmd.Err(); err != nil {
+			return fmt.Errorf("redis failed to get session info: %w", err)
+		}
+
+		err := resCmd.Scan(&sessionInfo)
+		if err != nil {
+			return fmt.Errorf("failed to parse session info: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return dto.SessionInfo{}, err
+	}
+	return sessionInfo, nil
+
+}

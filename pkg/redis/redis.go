@@ -1,0 +1,110 @@
+package redisstore
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"github.com/bsm/redislock"
+	"github.com/redis/go-redis/v9"
+	"go-game-backend/pkg/logging"
+	"go.uber.org/zap"
+	"time"
+)
+
+const redisPipelineKey string = "redisPipeline"
+
+type Config struct {
+	ServerAddr string `yaml:"server-address"`
+}
+
+type Storage struct {
+	cfg    *Config
+	rdb    *redis.Client
+	locker *redislock.Client
+	logger *logging.ZapLogger
+}
+
+func New(cfg *Config, logger *logging.ZapLogger) *Storage {
+	rdb := redis.NewClient(&redis.Options{Addr: cfg.ServerAddr})
+	locker := redislock.New(rdb)
+	return &Storage{
+		cfg:    cfg,
+		rdb:    rdb,
+		locker: locker,
+		logger: logger,
+	}
+}
+
+func (s *Storage) Stop() error {
+	err := s.rdb.Close()
+	if err != nil {
+		return fmt.Errorf("failed to close redis connection: %w", err)
+	}
+	return nil
+}
+
+func (s *Storage) DoWithTransaction(ctx context.Context, f func(ctx context.Context) error) error {
+	_, err := s.rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+		ctxWithPipe := context.WithValue(ctx, redisPipelineKey, pipe)
+		err := f(ctxWithPipe)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
+func (s *Storage) Do(ctx context.Context, f func(ctx context.Context, cmdable redis.Cmdable) error) error {
+	cmdable, err := s.getCmdFromCtx(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve cmdable: %w", err)
+	}
+
+	err = f(ctx, cmdable)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Storage) DoWithLock(
+	ctx context.Context,
+	key string,
+	ttl time.Duration,
+	f func(ctx context.Context) error,
+) error {
+	lock, err := s.locker.Obtain(ctx, key, ttl, nil)
+	if err != nil {
+		return fmt.Errorf("failed to obtain lock: %w", err)
+	}
+	defer func(lock *redislock.Lock, ctx context.Context) {
+		err := lock.Release(ctx)
+		if err != nil {
+			s.logger.ErrorCtx(
+				ctx,
+				"failed to release player lock",
+				zap.Error(err),
+				zap.String("key", key),
+			)
+		}
+	}(lock, ctx)
+	err = f(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Storage) getCmdFromCtx(ctx context.Context) (redis.Cmdable, error) {
+	p := ctx.Value(redisPipelineKey)
+	if p == nil {
+		return s.rdb, nil
+	}
+	pipe, ok := p.(redis.Pipeliner)
+	if !ok {
+		return nil, errors.New("invalid redis pipeliner in context")
+	}
+	return pipe, nil
+}

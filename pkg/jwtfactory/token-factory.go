@@ -19,13 +19,13 @@ func New(auth *jwtauth.JWTAuth) *Factory {
 
 func (tf *Factory) Generate(
 	ttl time.Duration,
+	issueTime time.Time,
 	extraClaims map[string]any,
 ) (tkn string, expiresAt time.Time, err error) {
-	timeNow := time.Now()
-	expiresAt = timeNow.Add(ttl)
+	expiresAt = issueTime.Add(ttl)
 	claims := map[string]any{
 		"exp": expiresAt.Unix(),
-		"iat": timeNow.Unix(),
+		"iat": issueTime.Unix(),
 	}
 	for k, v := range extraClaims {
 		claims[k] = v
