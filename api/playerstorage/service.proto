@@ -1,0 +1,32 @@
+edition = "2023";
+
+package playerstorage;
+
+import "dto/uuid.proto";
+
+option go_package = "go-game-backend/gen/playerstorage";
+
+// Add User.
+
+message AddUserRequest {
+  dto.UUID loginToken = 1;
+}
+
+message AddUserResponse {
+  int64 userID = 1;
+}
+
+// Find Existing User.
+
+message FindUserByLoginTokenRequest {
+  dto.UUID loginToken = 1;
+}
+
+message FindUserByLoginTokenResponse {
+  int64 userID = 1;
+}
+
+service PlayerStorageService {
+  rpc AddUser (AddUserRequest) returns (AddUserResponse);
+  rpc FindUser (FindUserByLoginTokenRequest) returns (FindUserByLoginTokenResponse);
+}

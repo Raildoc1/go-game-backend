@@ -1,0 +1,9 @@
+edition = "2023";
+
+package dto;
+
+option go_package = "go-game-backend/gen/dto";
+
+message UUID {
+  bytes value = 1;
+}

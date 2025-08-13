@@ -1,5 +1,7 @@
 package models
 
+import "github.com/google/uuid"
+
 type RefreshTokenRequest struct {
-	RefreshToken string `json:"refresh_token"`
+	RefreshToken uuid.UUID `json:"refresh_token"`
 }

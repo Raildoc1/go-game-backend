@@ -3,6 +3,7 @@ package redisrepo
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"go-game-backend/pkg/futils"
 	redisstore "go-game-backend/pkg/redis"
@@ -23,11 +24,11 @@ func New(store *redisstore.Storage) *Repository {
 	}
 }
 
-func (r Repository) DoWithTransaction(ctx context.Context, f futils.CtxF) error {
+func (r *Repository) DoWithTransaction(ctx context.Context, f futils.CtxF) error {
 	return r.store.DoWithTransaction(ctx, f)
 }
 
-func (r Repository) DoWithPlayerLock(ctx context.Context, userID int64, ttl time.Duration, f futils.CtxF) error {
+func (r *Repository) DoWithPlayerLock(ctx context.Context, userID int64, ttl time.Duration, f futils.CtxF) error {
 	key := fmt.Sprintf("lock:player:%v", userID)
 	err := r.store.DoWithLock(ctx, key, ttl, f)
 	if err != nil {
@@ -36,7 +37,7 @@ func (r Repository) DoWithPlayerLock(ctx context.Context, userID int64, ttl time
 	return nil
 }
 
-func (r Repository) SetSessionToken(ctx context.Context, userID int64, token string, expiresAt time.Time) error {
+func (r *Repository) SetSessionToken(ctx context.Context, userID int64, token uuid.UUID, expiresAt time.Time) error {
 	return r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
 		key := fmt.Sprintf("session_token:%v", userID)
 
@@ -54,9 +55,9 @@ func (r Repository) SetSessionToken(ctx context.Context, userID int64, token str
 	})
 }
 
-func (r Repository) SetRefreshToken(
+func (r *Repository) SetRefreshToken(
 	ctx context.Context,
-	token string,
+	token uuid.UUID,
 	sessionInfo dto.SessionInfo,
 	expiresAt time.Time,
 ) error {
@@ -79,7 +80,7 @@ func (r Repository) SetRefreshToken(
 	})
 }
 
-func (r Repository) RemoveRefreshToken(ctx context.Context, token string) error {
+func (r *Repository) RemoveRefreshToken(ctx context.Context, token uuid.UUID) error {
 	return r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
 		key := fmt.Sprintf("refresh_token:%s", token)
 
@@ -92,7 +93,7 @@ func (r Repository) RemoveRefreshToken(ctx context.Context, token string) error 
 	})
 }
 
-func (r Repository) GetSessionInfo(ctx context.Context, refreshToken string) (dto.SessionInfo, error) {
+func (r *Repository) GetSessionInfo(ctx context.Context, refreshToken uuid.UUID) (dto.SessionInfo, error) {
 	var sessionInfo dto.SessionInfo
 	err := r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
 		key := fmt.Sprintf("refresh_token:%s", refreshToken)
@@ -113,5 +114,4 @@ func (r Repository) GetSessionInfo(ctx context.Context, refreshToken string) (dt
 		return dto.SessionInfo{}, err
 	}
 	return sessionInfo, nil
-
 }

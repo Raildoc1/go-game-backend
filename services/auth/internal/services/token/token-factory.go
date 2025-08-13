@@ -26,7 +26,7 @@ func New(tokenFactory *jwtfactory.Factory, config *Config) *TokensFactory {
 
 func (f *TokensFactory) CreateAccessToken(
 	userID int64,
-	sessionToken string,
+	sessionToken uuid.UUID,
 	issueTime time.Time,
 ) (tkn string, expiresAt time.Time, err error) {
 	payload := map[string]any{
@@ -40,10 +40,10 @@ func (f *TokensFactory) CreateAccessToken(
 	return tkn, expiresAt, nil
 }
 
-func (f *TokensFactory) CreateRefreshToken(issueTime time.Time) (tkn string, expiresAt time.Time) {
-	return uuid.New().String(), issueTime.Add(f.cfg.RefreshTokenTTL)
+func (f *TokensFactory) CreateRefreshToken(issueTime time.Time) (tkn uuid.UUID, expiresAt time.Time) {
+	return uuid.New(), issueTime.Add(f.cfg.RefreshTokenTTL)
 }
 
-func (f *TokensFactory) CreateSessionToken(issueTime time.Time) (tkn string, expiresAt time.Time) {
-	return uuid.New().String(), issueTime.Add(f.cfg.RefreshTokenTTL)
+func (f *TokensFactory) CreateSessionToken(issueTime time.Time) (tkn uuid.UUID, expiresAt time.Time) {
+	return uuid.New(), issueTime.Add(f.cfg.RefreshTokenTTL)
 }

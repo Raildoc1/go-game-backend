@@ -1,0 +1,13 @@
+edition = "2023";
+
+package dto;
+
+import "dto/uuid.proto";
+
+option go_package = "go-game-backend/gen/dto";
+
+message Product {
+  dto.UUID id = 1;
+  string name = 2;
+  string description = 3;
+}

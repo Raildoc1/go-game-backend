@@ -13,3 +13,13 @@ build-auth:
 		--build-arg BUILD_TYPE=default
 
 build-all: build-players build-auth
+
+gen_proto:
+	mkdir -p gen/
+	find api \
+	-name "*.proto" \
+	-exec protoc \
+	--proto_path=api/ \
+	--go_out=gen/ \
+	--go-grpc_out=.. \
+	--go_opt=paths=source_relative {} +

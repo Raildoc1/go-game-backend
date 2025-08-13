@@ -3,6 +3,7 @@ package authserv
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"go-game-backend/pkg/futils"
 	"go-game-backend/services/auth/internal/dto"
 	"go-game-backend/services/auth/internal/services/token"
@@ -14,31 +15,30 @@ type Config struct {
 	PlayerLockTTL time.Duration `yaml:"player-lock-ttl"`
 }
 
-type UserRepository interface {
-	AddUser(ctx context.Context, loginToken string) (userID int64, err error)
-	FindUserByLoginToken(ctx context.Context, loginToken string) (userID int64, err error)
-	FindUserByRefreshToken(ctx context.Context, loginToken string) (userID int64, err error)
+type PlayerStorageGateway interface {
+	AddUser(ctx context.Context, loginToken uuid.UUID) (userID int64, err error)
+	FindUserByLoginToken(ctx context.Context, loginToken uuid.UUID) (userID int64, err error)
 }
 
 type SessionRepository interface {
 	DoWithTransaction(ctx context.Context, f futils.CtxF) error
 	DoWithPlayerLock(ctx context.Context, userID int64, ttl time.Duration, f futils.CtxF) error
-	SetSessionToken(ctx context.Context, userID int64, token string, expiresAt time.Time) error
-	SetRefreshToken(ctx context.Context, token string, sessionInfo dto.SessionInfo, expiresAt time.Time) error
-	RemoveRefreshToken(ctx context.Context, token string) error
-	GetSessionInfo(ctx context.Context, refreshToken string) (dto.SessionInfo, error)
+	SetSessionToken(ctx context.Context, userID int64, token uuid.UUID, expiresAt time.Time) error
+	SetRefreshToken(ctx context.Context, token uuid.UUID, sessionInfo dto.SessionInfo, expiresAt time.Time) error
+	RemoveRefreshToken(ctx context.Context, token uuid.UUID) error
+	GetSessionInfo(ctx context.Context, refreshToken uuid.UUID) (dto.SessionInfo, error)
 }
 
 type Service struct {
 	cfg               *Config
-	userRepository    UserRepository
+	userRepository    PlayerStorageGateway
 	sessionRepository SessionRepository
 	tokensFactory     *tknfactory.TokensFactory
 }
 
 func New(
 	cfg *Config,
-	userRepository UserRepository,
+	userRepository PlayerStorageGateway,
 	sessionRepository SessionRepository,
 	tokensFactory *tknfactory.TokensFactory,
 ) *Service {

@@ -1,5 +1,7 @@
 package models
 
+import "github.com/google/uuid"
+
 type RegisterRequest struct {
-	LoginToken string `json:"login_token"`
+	LoginToken uuid.UUID `json:"login_token"`
 }
