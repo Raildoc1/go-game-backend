@@ -2,8 +2,9 @@ package service
 
 import (
 	"context"
-	"google.golang.org/grpc"
 	"net/http"
+
+	"google.golang.org/grpc"
 )
 
 type Config struct {

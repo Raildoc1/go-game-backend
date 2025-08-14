@@ -3,11 +3,14 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"go-game-backend/pkg/grpcutils"
+	"go-game-backend/services/players/pkg/models"
+
 	"github.com/google/uuid"
 	pb "go-game-backend/gen/playerstorage"
-	"go-game-backend/pkg/grpcutils"
+
 	auth "go-game-backend/services/auth/internal/services/auth"
-	"go-game-backend/services/players/pkg/models"
+
 	"google.golang.org/grpc"
 )
 

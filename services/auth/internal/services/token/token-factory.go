@@ -2,9 +2,10 @@ package tknfactory
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"go-game-backend/pkg/jwtfactory"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Config struct {

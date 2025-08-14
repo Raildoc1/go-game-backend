@@ -2,11 +2,13 @@ package httphand
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
 	"go-game-backend/pkg/logging"
 	"go-game-backend/services/auth/pkg/models"
-	"go.uber.org/zap"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	"go.uber.org/zap"
 )
 
 type Logic interface {

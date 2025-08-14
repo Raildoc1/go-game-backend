@@ -3,12 +3,13 @@ package authserv
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"go-game-backend/pkg/futils"
 	"go-game-backend/services/auth/internal/dto"
 	"go-game-backend/services/auth/internal/services/token"
 	"go-game-backend/services/auth/pkg/models"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Config struct {
@@ -43,7 +44,6 @@ func New(
 	tokensFactory *tknfactory.TokensFactory,
 ) *Service {
 	return &Service{
-
 		cfg:               cfg,
 		userRepository:    userRepository,
 		sessionRepository: sessionRepository,

@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go-game-backend/pkg/logging"
+	"time"
+
 	"github.com/bsm/redislock"
 	"github.com/redis/go-redis/v9"
-	"go-game-backend/pkg/logging"
+
 	"go.uber.org/zap"
-	"time"
 )
 
 const redisPipelineKey string = "redisPipeline"

@@ -3,13 +3,16 @@ package redisrepo
 import (
 	"context"
 	"fmt"
+	"go-game-backend/pkg/futils"
+	"go-game-backend/services/auth/internal/dto"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
-	"go-game-backend/pkg/futils"
+
 	redisstore "go-game-backend/pkg/redis"
-	"go-game-backend/services/auth/internal/dto"
+
 	auth "go-game-backend/services/auth/internal/services/auth"
-	"time"
 )
 
 type Repository struct {

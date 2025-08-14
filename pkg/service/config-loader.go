@@ -3,9 +3,10 @@ package service
 import (
 	"flag"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"io"
 	"os"
+
+	"gopkg.in/yaml.v3"
 )
 
 func LoadConfig[TConfig any](defaultPath string, debugWriter io.Writer, onCloseError func(error)) (*TConfig, error) {

@@ -1,9 +1,10 @@
 package models
 
 import (
-	"github.com/google/uuid"
 	playerstoragepb "go-game-backend/gen/playerstorage"
 	"go-game-backend/pkg/protoutils"
+
+	"github.com/google/uuid"
 )
 
 func FindUserByLoginTokenRequestToProto(loginToken uuid.UUID) *playerstoragepb.FindUserByLoginTokenRequest {

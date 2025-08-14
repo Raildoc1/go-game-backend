@@ -2,8 +2,9 @@ package protoutils
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"go-game-backend/gen/dto"
+
+	"github.com/google/uuid"
 )
 
 func UUIDFromProto(pbUUID *dto.UUID) (uuid.UUID, error) {

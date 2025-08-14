@@ -3,12 +3,19 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/go-chi/jwtauth/v5"
 	"go-game-backend/pkg/jwtfactory"
 	"go-game-backend/pkg/logging"
-	redisstore "go-game-backend/pkg/redis"
 	"go-game-backend/pkg/service"
+	"log"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-chi/jwtauth/v5"
+
+	redisstore "go-game-backend/pkg/redis"
+
 	playerstoragegrpc "go-game-backend/services/auth/internal/gateway/playerstorage/grpc"
 	httphand "go-game-backend/services/auth/internal/handlers/http"
 	redisrepo "go-game-backend/services/auth/internal/repository/redis"
@@ -16,10 +23,6 @@ import (
 	tknfactory "go-game-backend/services/auth/internal/services/token"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"log"
-	"net/http"
-	"os"
-	"time"
 )
 
 type Config struct {
@@ -68,7 +71,6 @@ func main() {
 }
 
 func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
-
 	tokenAuth := jwtauth.New(cfg.JWTConfig.Algorithm, []byte(cfg.JWTConfig.Secret), nil)
 	jwtFactory := jwtfactory.New(tokenAuth)
 	tknFactory := tknfactory.New(jwtFactory, cfg.TokenFactory)
