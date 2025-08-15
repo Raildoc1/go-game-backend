@@ -81,12 +81,13 @@ func (s *Service) Run(rootCtx context.Context, shutdownTimeout time.Duration) er
 
 	g, errGroupCtx := errgroup.WithContext(syscallCtx)
 
+	done := make(chan struct{})
 	context.AfterFunc(errGroupCtx, func() {
-		ctx, cancelCtx := context.WithTimeout(context.Background(), shutdownTimeout)
-		defer cancelCtx()
-
-		<-ctx.Done()
-		log.Fatal("failed to gracefully shutdown the server")
+		select {
+		case <-time.After(shutdownTimeout):
+			log.Fatal("failed to gracefully shutdown the server")
+		case <-done:
+		}
 	})
 
 	if s.httpServerSetup != nil {
@@ -138,5 +139,7 @@ func (s *Service) Run(rootCtx context.Context, shutdownTimeout time.Duration) er
 		})
 	}
 
-	return g.Wait()
+	err := g.Wait()
+	close(done)
+	return err
 }
