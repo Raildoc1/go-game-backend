@@ -108,8 +108,13 @@ func (s *Service) Run(rootCtx context.Context, shutdownTimeout time.Duration) er
 
 		g.Go(func() error {
 			<-errGroupCtx.Done()
+
+			// We intentionally decouple shutdown from the (already-canceled) root context.
+			// A fresh context with a timeout lets the server drain in-flight requests.
 			ctx, cancel := context.WithTimeout(context.Background(), s.httpServerSetup.Cfg.ShutdownTimeout)
 			defer cancel()
+
+			//nolint:contextcheck // shutdown must *not* inherit canceled parent
 			if err := httpServer.Shutdown(ctx); err != nil {
 				return fmt.Errorf("failed to shutdown server: %w", err)
 			}
