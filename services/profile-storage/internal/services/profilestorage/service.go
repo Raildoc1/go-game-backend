@@ -23,7 +23,7 @@ func New(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-// AddUser creates a new user and returns its ID.
+// AddUser creates a new user identified by the given login token and returns its ID.
 func (s *Service) AddUser(ctx context.Context, loginToken uuid.UUID) (int64, error) {
 	userID, err := s.repo.AddUser(ctx, loginToken)
 	if err != nil {
@@ -32,7 +32,7 @@ func (s *Service) AddUser(ctx context.Context, loginToken uuid.UUID) (int64, err
 	return userID, nil
 }
 
-// FindUserByLoginToken looks up a user ID by login token.
+// FindUserByLoginToken returns the ID of a user associated with the given login token.
 func (s *Service) FindUserByLoginToken(ctx context.Context, loginToken uuid.UUID) (int64, error) {
 	userID, err := s.repo.FindUserByLoginToken(ctx, loginToken)
 	if err != nil {
