@@ -1,0 +1,16 @@
+name: Proto
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Protobuf
+        run: make gen_proto
+      - name: Check for changes
+        run: git diff --exit-code

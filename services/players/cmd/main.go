@@ -3,21 +3,27 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"go-game-backend/pkg/logging"
 	"go-game-backend/pkg/service"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/gin-gonic/gin"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
+// Config holds the configuration for the players service.
 type Config struct {
-	Service         *service.Config           `yaml:"service"`
-	HTTP            *service.HTTPServerConfig `yaml:"http"`
-	ShutdownTimeout time.Duration             `yaml:"shutdown-timeout"`
+	// Service contains generic service configuration such as version.
+	Service *service.Config `yaml:"service"`
+	// HTTP defines settings for the HTTP server.
+	HTTP *service.HTTPServerConfig `yaml:"http"`
+	// ShutdownTimeout specifies how long to wait for graceful shutdown.
+	ShutdownTimeout time.Duration `yaml:"shutdown-timeout"`
 }
 
 func main() {
@@ -49,7 +55,7 @@ func main() {
 	logger.InfoCtx(ctx, "application stopped successfully")
 }
 
-func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
+func run(ctx context.Context, cfg *Config, _ *logging.ZapLogger) error {
 	serv := service.NewBuilder().
 		WithHTTPServer(cfg.HTTP, func() http.Handler {
 			router := gin.Default()

@@ -3,19 +3,32 @@ package service
 import (
 	"flag"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
+// LoadConfig loads a YAML configuration file into the provided type. The
+// defaultPath is used when the `-config` flag is not supplied. If debugWriter
+// is non-nil the loaded configuration will be written to it. The onCloseError
+// callback is invoked when closing the configuration file fails.
 func LoadConfig[TConfig any](defaultPath string, debugWriter io.Writer, onCloseError func(error)) (*TConfig, error) {
 	var configPath string
 	flag.StringVar(&configPath, "config", defaultPath, "config in YAML format")
 	flag.Parse()
 
-	f, err := os.Open(configPath)
+	cleanConfigPath, err := validateAndCleanPath(".", configPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open %s: %w", configPath, err)
+		return nil, fmt.Errorf("error validating path: %w", err)
+	}
+
+	// #nosec G304 -- safePath validated against rootDir
+	f, err := os.Open(cleanConfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %s: %w", cleanConfigPath, err)
 	}
 	defer func(f *os.File) {
 		err := f.Close()
@@ -36,4 +49,33 @@ func LoadConfig[TConfig any](defaultPath string, debugWriter io.Writer, onCloseE
 		}
 	}
 	return &cfg, nil
+}
+
+// validateAndCleanPath ensures that 'path' is inside 'root' (or exactly 'root').
+// Both root and path are resolved to absolute, cleaned paths.
+// Fails if the target is outside root, even via symlink.
+func validateAndCleanPath(root, path string) (string, error) {
+	absRoot, err := filepath.EvalSymlinks(filepath.Clean(root))
+	if err != nil {
+		return "", fmt.Errorf("invalid root path: %w", err)
+	}
+	absRoot, err = filepath.Abs(absRoot)
+	if err != nil {
+		return "", fmt.Errorf("invalid root path: %w", err)
+	}
+
+	absPath, err := filepath.EvalSymlinks(filepath.Clean(path))
+	if err != nil {
+		return "", fmt.Errorf("invalid target path: %w", err)
+	}
+	absPath, err = filepath.Abs(absPath)
+	if err != nil {
+		return "", fmt.Errorf("invalid target path: %w", err)
+	}
+
+	if absPath != absRoot && !strings.HasPrefix(absPath, absRoot+string(os.PathSeparator)) {
+		return "", fmt.Errorf("path %q is outside allowed root %q", absPath, absRoot)
+	}
+
+	return absPath, nil
 }
