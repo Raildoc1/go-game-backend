@@ -2,9 +2,10 @@ package grpcserver
 
 import (
 	"context"
+	"go-game-backend/pkg/protoutils"
 
 	pb "go-game-backend/gen/profilestorage"
-	"go-game-backend/pkg/protoutils"
+
 	logic "go-game-backend/services/profile-storage/internal/services/profilestorage"
 
 	"google.golang.org/grpc/codes"

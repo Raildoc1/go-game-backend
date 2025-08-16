@@ -3,18 +3,20 @@ package main
 import (
 	"context"
 	"fmt"
+	"go-game-backend/pkg/logging"
+	"go-game-backend/pkg/service"
+	"go-game-backend/services/profile-storage/migrations"
 	"log"
 	"os"
 	"time"
 
 	pb "go-game-backend/gen/profilestorage"
-	"go-game-backend/pkg/logging"
+
 	postgresstore "go-game-backend/pkg/postgres"
-	"go-game-backend/pkg/service"
+
 	grpcserver "go-game-backend/services/profile-storage/internal/handlers/grpc"
 	postgresrepo "go-game-backend/services/profile-storage/internal/repository/postgres"
 	profilestorage "go-game-backend/services/profile-storage/internal/services/profilestorage"
-	"go-game-backend/services/profile-storage/migrations"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

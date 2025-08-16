@@ -4,12 +4,11 @@ package postgresrepo
 import (
 	"context"
 	"fmt"
+	"go-game-backend/services/profile-storage/internal/repository/postgres/sqlc"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"go-game-backend/services/profile-storage/internal/repository/postgres/sqlc"
 )
 
 // Repository provides access to player credentials stored in PostgreSQL.

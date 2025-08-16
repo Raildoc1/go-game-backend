@@ -2,6 +2,7 @@ package profilestorage
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 )
@@ -24,10 +25,18 @@ func New(repo Repository) *Service {
 
 // AddUser creates a new user and returns its ID.
 func (s *Service) AddUser(ctx context.Context, loginToken uuid.UUID) (int64, error) {
-	return s.repo.AddUser(ctx, loginToken)
+	userID, err := s.repo.AddUser(ctx, loginToken)
+	if err != nil {
+		return 0, fmt.Errorf("repository add user: %w", err)
+	}
+	return userID, nil
 }
 
 // FindUserByLoginToken looks up a user ID by login token.
 func (s *Service) FindUserByLoginToken(ctx context.Context, loginToken uuid.UUID) (int64, error) {
-	return s.repo.FindUserByLoginToken(ctx, loginToken)
+	userID, err := s.repo.FindUserByLoginToken(ctx, loginToken)
+	if err != nil {
+		return 0, fmt.Errorf("repository find user by login token: %w", err)
+	}
+	return userID, nil
 }

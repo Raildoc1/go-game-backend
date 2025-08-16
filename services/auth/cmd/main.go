@@ -27,11 +27,8 @@ import (
 
 // Config holds the configuration for the auth service.
 type Config struct {
-	// Service contains generic service configuration such as version.
-	Service *service.Config `yaml:"service"`
-	// HTTP defines settings for the HTTP server.
-	HTTP *service.HTTPServerConfig `yaml:"http"`
-	// ShutdownTimeout specifies how long to wait for graceful shutdown.
+	Service            *service.Config            `yaml:"service"`
+	HTTP               *service.HTTPServerConfig  `yaml:"http"`
 	AuthService        *authserv.Config           `yaml:"auth-service"`
 	Redis              *redisstore.Config         `yaml:"redis"`
 	TokenFactory       *tknfactory.Config         `yaml:"token-factory"`
@@ -40,6 +37,7 @@ type Config struct {
 	ShutdownTimeout    time.Duration              `yaml:"shutdown-timeout"`
 }
 
+// JWTConfig holds the configuration for the JWT generation.
 type JWTConfig struct {
 	Algorithm string `yaml:"algorithm"`
 	Secret    string `yaml:"secret"`
