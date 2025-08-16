@@ -51,7 +51,7 @@ func (r *Repository) SetSessionToken(ctx context.Context, userID int64, token uu
 	return r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
 		key := fmt.Sprintf("session_token:%v", userID)
 
-		setCmd := cmdable.Set(ctx, key, token, 0)
+		setCmd := cmdable.Set(ctx, key, token.String(), 0)
 		if err := setCmd.Err(); err != nil {
 			return fmt.Errorf("failed to set session token: %w", err)
 		}
@@ -73,10 +73,10 @@ func (r *Repository) SetRefreshToken(
 	expiresAt time.Time,
 ) error {
 	return r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
-		key := fmt.Sprintf("refresh_token:%s", token)
+		key := fmt.Sprintf("refresh_token:%s", token.String())
 
 		setRes := cmdable.HSet(ctx, key,
-			"session_token", sessionInfo.SessionToken,
+			"session_token", sessionInfo.SessionToken.String(),
 			"user_id", sessionInfo.UserID)
 		if err := setRes.Err(); err != nil {
 			return fmt.Errorf("redis failed to set session token: %w", err)
