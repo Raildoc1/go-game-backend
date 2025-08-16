@@ -3,6 +3,7 @@ service:
 http:
   address: :8080
   shutdown-timeout: 5s
+  read-header-timeout: 3s
 auth-service:
   player-lock-ttl: 30s
 redis:

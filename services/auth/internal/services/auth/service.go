@@ -131,7 +131,7 @@ func (l *Service) startSession(ctx context.Context, userID int64) (resp *models.
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("session token transaction failed: %w", err)
 	}
 
 	resp = &models.LoginRespose{
@@ -171,7 +171,7 @@ func (l *Service) RefreshToken(ctx context.Context, req *models.RefreshTokenRequ
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("refresh token transaction failed: %w", err)
 	}
 
 	resp = &models.LoginRespose{

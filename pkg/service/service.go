@@ -23,6 +23,9 @@ type HTTPServerConfig struct {
 	// ShutdownTimeout defines how long the server has to gracefully
 	// shutdown.
 	ShutdownTimeout time.Duration `yaml:"shutdown-timeout"`
+	// ReadHeaderTimeout limits how long the server waits to read request headers.
+	// Helps prevent Slowloris attacks. Usually set to 1–5s.
+	ReadHeaderTimeout time.Duration `yaml:"read-header-timeout"`
 }
 
 type httpServerSetup struct {
@@ -41,32 +44,18 @@ type grpcServerSetup struct {
 	SetupServerFunc func(*grpc.Server)
 }
 
-// DeinitSetupConfig holds deinitialization settings.
-type DeinitSetupConfig struct {
-	// ShutdownTimeout defines how long deinitialization is allowed to take.
-	ShutdownTimeout time.Duration `xml:"shutdown-timeout"`
-}
-
-type deinitSetup struct {
-	Cfg        *DeinitSetupConfig
-	DeinitFunc func() error
-}
-
 // Service orchestrates the lifecycle of application components such as HTTP
 // and gRPC servers.
 type Service struct {
-	initFunc        func(context.Context) error
 	httpServerSetup *httpServerSetup
 	grpcServerSetup *grpcServerSetup
 }
 
 func newService(
-	initFunc func(context.Context) error,
 	httpServerSetup *httpServerSetup,
 	grpcServerSetup *grpcServerSetup,
 ) *Service {
 	return &Service{
-		initFunc:        initFunc,
 		httpServerSetup: httpServerSetup,
 		grpcServerSetup: grpcServerSetup,
 	}
@@ -86,13 +75,6 @@ func (s *Service) Run(rootCtx context.Context, shutdownTimeout time.Duration) er
 	)
 	defer cancel()
 
-	if s.initFunc != nil {
-		err := s.initFunc(syscallCtx)
-		if err != nil {
-			return fmt.Errorf("init service failed: %w", err)
-		}
-	}
-
 	g, errGroupCtx := errgroup.WithContext(syscallCtx)
 
 	done := make(chan struct{})
@@ -106,8 +88,9 @@ func (s *Service) Run(rootCtx context.Context, shutdownTimeout time.Duration) er
 
 	if s.httpServerSetup != nil {
 		httpServer := &http.Server{
-			Addr:    s.httpServerSetup.Cfg.Address,
-			Handler: s.httpServerSetup.HandlerFactory(),
+			Addr:              s.httpServerSetup.Cfg.Address,
+			ReadHeaderTimeout: s.httpServerSetup.Cfg.ReadHeaderTimeout,
+			Handler:           s.httpServerSetup.HandlerFactory(),
 		}
 
 		g.Go(
@@ -160,5 +143,8 @@ func (s *Service) Run(rootCtx context.Context, shutdownTimeout time.Duration) er
 
 	err := g.Wait()
 	close(done)
-	return err
+	if err != nil {
+		return fmt.Errorf("one of the root goroutines finished with error: %w", err)
+	}
+	return nil
 }

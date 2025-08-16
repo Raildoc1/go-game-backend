@@ -2,7 +2,6 @@ package redisstore
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"go-game-backend/pkg/logging"
 	"time"
@@ -13,7 +12,9 @@ import (
 	"go.uber.org/zap"
 )
 
-const redisPipelineKey string = "redisPipeline"
+type ctxValueKey string
+
+const redisPipelineKey ctxValueKey = "redisPipeline"
 
 // Config defines options for connecting to a Redis server.
 type Config struct {
@@ -56,13 +57,13 @@ func (s *Storage) Stop() error {
 func (s *Storage) DoWithTransaction(ctx context.Context, f func(ctx context.Context) error) error {
 	_, err := s.rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
 		ctxWithPipe := context.WithValue(ctx, redisPipelineKey, pipe)
-		err := f(ctxWithPipe)
-		if err != nil {
-			return err
-		}
-		return nil
+
+		return f(ctxWithPipe)
 	})
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to execute transaction: %w", err)
+	}
+	return nil
 }
 
 // Do executes the provided function with a Redis Cmdable derived from the
@@ -118,7 +119,7 @@ func (s *Storage) getCmdFromCtx(ctx context.Context) (redis.Cmdable, error) {
 	}
 	pipe, ok := p.(redis.Pipeliner)
 	if !ok {
-		return nil, errors.New("invalid redis pipeliner in context")
+		return nil, fmt.Errorf("invalid redis pipeliner in context")
 	}
 	return pipe, nil
 }

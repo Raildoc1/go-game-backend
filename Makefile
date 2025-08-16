@@ -24,20 +24,8 @@ gen_proto:
 	--go-grpc_out=.. \
 	--go_opt=paths=source_relative {} +
 
-lint-build:
-	docker build \
-		-f ./lint/Dockerfile \
-		-t golangci:game-backend \
-		.
-
-lint: lint-build
-	docker run --rm \
-		-v .:/app \
-		-v ./lint/tmp/golangci-cache:/tmp/golangci-cache \
-		golangci:game-backend
-
-golangci-lint:
+golangci-lint-fix:
 	docker run -t --rm -v .:/app -w /app golangci/golangci-lint:v2.4.0-alpine golangci-lint run --fix
 
-golangci-lint-migrate:
-	docker run -t --rm -v .:/app -w /app golangci/golangci-lint:v2.4.0-alpine golangci-lint migrate
+golangci-lint:
+	docker run -t --rm -v .:/app -w /app golangci/golangci-lint:v2.4.0-alpine golangci-lint run

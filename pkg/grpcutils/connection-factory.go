@@ -1,6 +1,8 @@
 package grpcutils
 
 import (
+	"fmt"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -9,5 +11,9 @@ import (
 // transport credentials and returns the established connection.
 func Connect(serverAddress string) (*grpc.ClientConn, error) {
 	options := grpc.WithTransportCredentials(insecure.NewCredentials())
-	return grpc.NewClient(serverAddress, options)
+	conn, err := grpc.NewClient(serverAddress, options)
+	if err != nil {
+		return nil, fmt.Errorf("could not create grpc connection: %w", err)
+	}
+	return conn, nil
 }

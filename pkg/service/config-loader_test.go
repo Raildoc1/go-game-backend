@@ -24,7 +24,7 @@ func TestValidateAndCleanPath(t *testing.T) {
 	}
 
 	subdir := filepath.Join(root, "conf.d")
-	if err := os.Mkdir(subdir, 0o755); err != nil {
+	if err := os.Mkdir(subdir, 0o750); err != nil {
 		t.Fatalf("mkdir subdir: %v", err)
 	}
 	inSub := filepath.Join(subdir, "a.yaml")

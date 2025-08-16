@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"net/http"
 
 	"google.golang.org/grpc"
@@ -17,7 +16,6 @@ type Config struct {
 // Builder helps in constructing a Service with optional components such as
 // initialization functions and HTTP/GRPC servers.
 type Builder struct {
-	initFunc        func(context.Context) error
 	httpServerSetup *httpServerSetup
 	grpcServerSetup *grpcServerSetup
 }
@@ -25,12 +23,6 @@ type Builder struct {
 // NewBuilder creates a new empty Builder instance.
 func NewBuilder() *Builder {
 	return &Builder{}
-}
-
-// WithInitialization registers a function to run during service startup.
-func (b *Builder) WithInitialization(initFunc func(context.Context) error) *Builder {
-	b.initFunc = initFunc
-	return b
 }
 
 // WithHTTPServer configures the service to start an HTTP server using the
@@ -62,7 +54,6 @@ func (b *Builder) WithGRPCServer(
 // Build constructs a Service based on the options configured on the Builder.
 func (b *Builder) Build() *Service {
 	return newService(
-		b.initFunc,
 		b.httpServerSetup,
 		b.grpcServerSetup,
 	)

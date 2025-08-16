@@ -55,7 +55,7 @@ func main() {
 	logger.InfoCtx(ctx, "application stopped successfully")
 }
 
-func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
+func run(ctx context.Context, cfg *Config, _ *logging.ZapLogger) error {
 	serv := service.NewBuilder().
 		WithHTTPServer(cfg.HTTP, func() http.Handler {
 			router := gin.Default()

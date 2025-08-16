@@ -3,4 +3,5 @@ service:
 http:
   address: :8080
   shutdown-timeout: 5s
+  read-header-timeout: 3s
 shutdown-timeout: 5s
