@@ -15,6 +15,7 @@ build-auth:
 build-all: build-players build-auth
 
 PROTO_FILES := $(shell find api -name "*.proto")
+GOLANG_VERSION ?= 1.24
 
 gen_proto:
 	docker run -t --rm \
@@ -30,4 +31,4 @@ golangci-lint:
 	docker run -t --rm -v .:/app -w /app golangci/golangci-lint:v2.4.0-alpine golangci-lint run
 
 test:
-	go test ./...
+	docker run --rm -v $(CURDIR):/app -w /app golang:$(GOLANG_VERSION) go test ./...
