@@ -14,15 +14,14 @@ build-auth:
 
 build-all: build-players build-auth
 
+PROTO_FILES := $(shell find api -name "*.proto")
+
 gen_proto:
-	mkdir -p gen/
-	find api \
-	-name "*.proto" \
-	-exec protoc \
-	--proto_path=api/ \
-	--go_out=gen/ \
-	--go-grpc_out=.. \
-	--go_opt=paths=source_relative {} +
+	docker run -t --rm \
+    	        -v $(CURDIR):/app \
+    	        -w /app \
+    	        bufbuild/buf generate --template buf.gen.yaml api
+
 
 golangci-lint-fix:
 	docker run -t --rm -v .:/app -w /app golangci/golangci-lint:v2.4.0-alpine golangci-lint run --fix
