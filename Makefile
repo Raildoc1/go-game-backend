@@ -18,9 +18,9 @@ PROTO_FILES := $(shell find api -name "*.proto")
 GOLANG_VERSION ?= 1.24
 
 gen_proto:
-	docker run -t --rm \
-    	        -v $(CURDIR):/app \
-    	        -w /app \
+	docker run -t --rm                                            \
+    	        -v $(CURDIR):/app                                 \
+    	        -w /app                                           \
     	        bufbuild/buf generate --template buf.gen.yaml api
 
 
