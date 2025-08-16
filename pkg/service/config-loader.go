@@ -73,7 +73,7 @@ func validateAndCleanPath(root, path string) (string, error) {
 		return "", fmt.Errorf("invalid target path: %w", err)
 	}
 
-	if absPath != absRoot && !strings.HasPrefix(absPath, absRoot+string(os.PathSeparator)) {
+	if absPath != absRoot && !strings.HasPrefix(absPath, absRoot) {
 		return "", fmt.Errorf("path %q is outside allowed root %q", absPath, absRoot)
 	}
 

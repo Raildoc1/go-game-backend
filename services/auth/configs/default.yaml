@@ -11,8 +11,8 @@ redis:
 token-factory:
   access-token-ttl: 15m
   refresh-token-ttl: 720h #30 days
-player-storage-grpc:
-  server-address: player-storage:9090
+profile-storage-grpc:
+  server-address: profile-storage:9090
 jwt:
   algorithm: HS256
   secret: secret

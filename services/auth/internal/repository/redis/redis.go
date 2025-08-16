@@ -31,7 +31,7 @@ func New(store *redisstore.Storage) *Repository {
 
 // DoWithTransaction executes the given function within a Redis transaction.
 func (r *Repository) DoWithTransaction(ctx context.Context, f futils.CtxF) error {
-	return r.store.DoWithTransaction(ctx, f) //nolint:wrapcheck // error from the inner function should be returned as-is
+	return r.store.DoWithTransaction(ctx, f)
 }
 
 // DoWithPlayerLock obtains a distributed lock for a specific user and runs the
@@ -40,7 +40,7 @@ func (r *Repository) DoWithPlayerLock(ctx context.Context, userID int64, ttl tim
 	key := fmt.Sprintf("lock:player:%v", userID)
 	err := r.store.DoWithLock(ctx, key, ttl, f)
 	if err != nil {
-		return err //nolint:wrapcheck // error from the inner function should be returned as-is
+		return err
 	}
 	return nil
 }
@@ -48,11 +48,10 @@ func (r *Repository) DoWithPlayerLock(ctx context.Context, userID int64, ttl tim
 // SetSessionToken stores a session token for the given user with an expiration
 // time.
 func (r *Repository) SetSessionToken(ctx context.Context, userID int64, token uuid.UUID, expiresAt time.Time) error {
-	//nolint:wrapcheck // error from the inner function should be returned as-is
 	return r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
 		key := fmt.Sprintf("session_token:%v", userID)
 
-		setCmd := cmdable.Set(ctx, key, token, 0)
+		setCmd := cmdable.Set(ctx, key, token.String(), 0)
 		if err := setCmd.Err(); err != nil {
 			return fmt.Errorf("failed to set session token: %w", err)
 		}
@@ -73,12 +72,11 @@ func (r *Repository) SetRefreshToken(
 	sessionInfo dto.SessionInfo,
 	expiresAt time.Time,
 ) error {
-	//nolint:wrapcheck // error from the inner function should be returned as-is
 	return r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
-		key := fmt.Sprintf("refresh_token:%s", token)
+		key := fmt.Sprintf("refresh_token:%s", token.String())
 
 		setRes := cmdable.HSet(ctx, key,
-			"session_token", sessionInfo.SessionToken,
+			"session_token", sessionInfo.SessionToken.String(),
 			"user_id", sessionInfo.UserID)
 		if err := setRes.Err(); err != nil {
 			return fmt.Errorf("redis failed to set session token: %w", err)
@@ -95,7 +93,6 @@ func (r *Repository) SetRefreshToken(
 
 // RemoveRefreshToken deletes a refresh token from the store.
 func (r *Repository) RemoveRefreshToken(ctx context.Context, token uuid.UUID) error {
-	//nolint:wrapcheck // error from the inner function should be returned as-is
 	return r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
 		key := fmt.Sprintf("refresh_token:%s", token)
 
@@ -128,7 +125,7 @@ func (r *Repository) GetSessionInfo(ctx context.Context, refreshToken uuid.UUID)
 		return nil
 	})
 	if err != nil {
-		return dto.SessionInfo{}, err //nolint:wrapcheck // error from the inner function should be returned as-is
+		return dto.SessionInfo{}, err
 	}
 	return sessionInfo, nil
 }

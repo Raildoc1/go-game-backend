@@ -1,0 +1,17 @@
+name: Go Mod Tidy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: stable
+      - run: go mod tidy
+      - run: git diff --exit-code

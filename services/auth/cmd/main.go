@@ -16,7 +16,7 @@ import (
 
 	redisstore "go-game-backend/pkg/redis"
 
-	playerstoragegrpc "go-game-backend/services/auth/internal/gateway/playerstorage/grpc"
+	profilestoragegrpc "go-game-backend/services/auth/internal/gateway/profilestorage/grpc"
 	httphand "go-game-backend/services/auth/internal/handlers/http"
 	redisrepo "go-game-backend/services/auth/internal/repository/redis"
 	authserv "go-game-backend/services/auth/internal/services/auth"
@@ -27,19 +27,17 @@ import (
 
 // Config holds the configuration for the auth service.
 type Config struct {
-	// Service contains generic service configuration such as version.
-	Service *service.Config `yaml:"service"`
-	// HTTP defines settings for the HTTP server.
-	HTTP *service.HTTPServerConfig `yaml:"http"`
-	// ShutdownTimeout specifies how long to wait for graceful shutdown.
-	AuthService       *authserv.Config          `yaml:"auth-service"`
-	Redis             *redisstore.Config        `yaml:"redis"`
-	TokenFactory      *tknfactory.Config        `yaml:"token-factory"`
-	PlayerStorageGRPC *playerstoragegrpc.Config `yaml:"player-storage-grpc"`
-	JWTConfig         *JWTConfig                `yaml:"jwt"`
-	ShutdownTimeout   time.Duration             `yaml:"shutdown-timeout"`
+	Service            *service.Config            `yaml:"service"`
+	HTTP               *service.HTTPServerConfig  `yaml:"http"`
+	AuthService        *authserv.Config           `yaml:"auth-service"`
+	Redis              *redisstore.Config         `yaml:"redis"`
+	TokenFactory       *tknfactory.Config         `yaml:"token-factory"`
+	ProfileStorageGRPC *profilestoragegrpc.Config `yaml:"profile-storage-grpc"`
+	JWTConfig          *JWTConfig                 `yaml:"jwt"`
+	ShutdownTimeout    time.Duration              `yaml:"shutdown-timeout"`
 }
 
+// JWTConfig holds the configuration for the JWT generation.
 type JWTConfig struct {
 	Algorithm string `yaml:"algorithm"`
 	Secret    string `yaml:"secret"`
@@ -84,13 +82,13 @@ func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 
 	redisRepo := redisrepo.New(redisStore)
 
-	playerStorageGateway, err := playerstoragegrpc.New(cfg.PlayerStorageGRPC)
+	profileStorageGateway, err := profilestoragegrpc.New(cfg.ProfileStorageGRPC)
 	if err != nil {
-		return fmt.Errorf("failed to create player storage gateway: %w", err)
+		return fmt.Errorf("failed to create profile storage gateway: %w", err)
 	}
-	defer service.Stop(ctx, playerStorageGateway, "player storage gateway", logger)
+	defer service.Stop(ctx, profileStorageGateway, "profile storage gateway", logger)
 
-	authService := authserv.New(cfg.AuthService, playerStorageGateway, redisRepo, tknFactory)
+	authService := authserv.New(cfg.AuthService, profileStorageGateway, redisRepo, tknFactory)
 	httpHandler := httphand.New(authService, logger)
 
 	serv := service.NewBuilder().

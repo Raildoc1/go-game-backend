@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.7
 // 	protoc        (unknown)
-// source: playerstorage/service.proto
+// source: profilestorage/service.proto
 
-package playerstorage
+package profilestorage
 
 import (
 	dto "go-game-backend/gen/dto"
@@ -31,7 +31,7 @@ type AddUserRequest struct {
 
 func (x *AddUserRequest) Reset() {
 	*x = AddUserRequest{}
-	mi := &file_playerstorage_service_proto_msgTypes[0]
+	mi := &file_profilestorage_service_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -43,7 +43,7 @@ func (x *AddUserRequest) String() string {
 func (*AddUserRequest) ProtoMessage() {}
 
 func (x *AddUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_playerstorage_service_proto_msgTypes[0]
+	mi := &file_profilestorage_service_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -56,7 +56,7 @@ func (x *AddUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddUserRequest.ProtoReflect.Descriptor instead.
 func (*AddUserRequest) Descriptor() ([]byte, []int) {
-	return file_playerstorage_service_proto_rawDescGZIP(), []int{0}
+	return file_profilestorage_service_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *AddUserRequest) GetLoginToken() *dto.UUID {
@@ -75,7 +75,7 @@ type AddUserResponse struct {
 
 func (x *AddUserResponse) Reset() {
 	*x = AddUserResponse{}
-	mi := &file_playerstorage_service_proto_msgTypes[1]
+	mi := &file_profilestorage_service_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -87,7 +87,7 @@ func (x *AddUserResponse) String() string {
 func (*AddUserResponse) ProtoMessage() {}
 
 func (x *AddUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_playerstorage_service_proto_msgTypes[1]
+	mi := &file_profilestorage_service_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -100,7 +100,7 @@ func (x *AddUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddUserResponse.ProtoReflect.Descriptor instead.
 func (*AddUserResponse) Descriptor() ([]byte, []int) {
-	return file_playerstorage_service_proto_rawDescGZIP(), []int{1}
+	return file_profilestorage_service_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *AddUserResponse) GetUserID() int64 {
@@ -119,7 +119,7 @@ type FindUserByLoginTokenRequest struct {
 
 func (x *FindUserByLoginTokenRequest) Reset() {
 	*x = FindUserByLoginTokenRequest{}
-	mi := &file_playerstorage_service_proto_msgTypes[2]
+	mi := &file_profilestorage_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -131,7 +131,7 @@ func (x *FindUserByLoginTokenRequest) String() string {
 func (*FindUserByLoginTokenRequest) ProtoMessage() {}
 
 func (x *FindUserByLoginTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_playerstorage_service_proto_msgTypes[2]
+	mi := &file_profilestorage_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -144,7 +144,7 @@ func (x *FindUserByLoginTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindUserByLoginTokenRequest.ProtoReflect.Descriptor instead.
 func (*FindUserByLoginTokenRequest) Descriptor() ([]byte, []int) {
-	return file_playerstorage_service_proto_rawDescGZIP(), []int{2}
+	return file_profilestorage_service_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *FindUserByLoginTokenRequest) GetLoginToken() *dto.UUID {
@@ -163,7 +163,7 @@ type FindUserByLoginTokenResponse struct {
 
 func (x *FindUserByLoginTokenResponse) Reset() {
 	*x = FindUserByLoginTokenResponse{}
-	mi := &file_playerstorage_service_proto_msgTypes[3]
+	mi := &file_profilestorage_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -175,7 +175,7 @@ func (x *FindUserByLoginTokenResponse) String() string {
 func (*FindUserByLoginTokenResponse) ProtoMessage() {}
 
 func (x *FindUserByLoginTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_playerstorage_service_proto_msgTypes[3]
+	mi := &file_profilestorage_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -188,7 +188,7 @@ func (x *FindUserByLoginTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindUserByLoginTokenResponse.ProtoReflect.Descriptor instead.
 func (*FindUserByLoginTokenResponse) Descriptor() ([]byte, []int) {
-	return file_playerstorage_service_proto_rawDescGZIP(), []int{3}
+	return file_profilestorage_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *FindUserByLoginTokenResponse) GetUserID() int64 {
@@ -198,11 +198,11 @@ func (x *FindUserByLoginTokenResponse) GetUserID() int64 {
 	return 0
 }
 
-var File_playerstorage_service_proto protoreflect.FileDescriptor
+var File_profilestorage_service_proto protoreflect.FileDescriptor
 
-const file_playerstorage_service_proto_rawDesc = "" +
+const file_profilestorage_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1bplayerstorage/service.proto\x12\rplayerstorage\x1a\x0edto/uuid.proto\";\n" +
+	"\x1cprofilestorage/service.proto\x12\x0eprofilestorage\x1a\x0edto/uuid.proto\";\n" +
 	"\x0eAddUserRequest\x12)\n" +
 	"\n" +
 	"loginToken\x18\x01 \x01(\v2\t.dto.UUIDR\n" +
@@ -214,38 +214,38 @@ const file_playerstorage_service_proto_rawDesc = "" +
 	"loginToken\x18\x01 \x01(\v2\t.dto.UUIDR\n" +
 	"loginToken\"6\n" +
 	"\x1cFindUserByLoginTokenResponse\x12\x16\n" +
-	"\x06userID\x18\x01 \x01(\x03R\x06userID2\xc5\x01\n" +
-	"\x14PlayerStorageService\x12H\n" +
-	"\aAddUser\x12\x1d.playerstorage.AddUserRequest\x1a\x1e.playerstorage.AddUserResponse\x12c\n" +
-	"\bFindUser\x12*.playerstorage.FindUserByLoginTokenRequest\x1a+.playerstorage.FindUserByLoginTokenResponseB#Z!go-game-backend/gen/playerstorageb\beditionsp\xe8\a"
+	"\x06userID\x18\x01 \x01(\x03R\x06userID2\xca\x01\n" +
+	"\x15ProfileStorageService\x12J\n" +
+	"\aAddUser\x12\x1e.profilestorage.AddUserRequest\x1a\x1f.profilestorage.AddUserResponse\x12e\n" +
+	"\bFindUser\x12+.profilestorage.FindUserByLoginTokenRequest\x1a,.profilestorage.FindUserByLoginTokenResponseB$Z\"go-game-backend/gen/profilestorageb\beditionsp\xe8\a"
 
 var (
-	file_playerstorage_service_proto_rawDescOnce sync.Once
-	file_playerstorage_service_proto_rawDescData []byte
+	file_profilestorage_service_proto_rawDescOnce sync.Once
+	file_profilestorage_service_proto_rawDescData []byte
 )
 
-func file_playerstorage_service_proto_rawDescGZIP() []byte {
-	file_playerstorage_service_proto_rawDescOnce.Do(func() {
-		file_playerstorage_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_playerstorage_service_proto_rawDesc), len(file_playerstorage_service_proto_rawDesc)))
+func file_profilestorage_service_proto_rawDescGZIP() []byte {
+	file_profilestorage_service_proto_rawDescOnce.Do(func() {
+		file_profilestorage_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_profilestorage_service_proto_rawDesc), len(file_profilestorage_service_proto_rawDesc)))
 	})
-	return file_playerstorage_service_proto_rawDescData
+	return file_profilestorage_service_proto_rawDescData
 }
 
-var file_playerstorage_service_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
-var file_playerstorage_service_proto_goTypes = []any{
-	(*AddUserRequest)(nil),               // 0: playerstorage.AddUserRequest
-	(*AddUserResponse)(nil),              // 1: playerstorage.AddUserResponse
-	(*FindUserByLoginTokenRequest)(nil),  // 2: playerstorage.FindUserByLoginTokenRequest
-	(*FindUserByLoginTokenResponse)(nil), // 3: playerstorage.FindUserByLoginTokenResponse
+var file_profilestorage_service_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_profilestorage_service_proto_goTypes = []any{
+	(*AddUserRequest)(nil),               // 0: profilestorage.AddUserRequest
+	(*AddUserResponse)(nil),              // 1: profilestorage.AddUserResponse
+	(*FindUserByLoginTokenRequest)(nil),  // 2: profilestorage.FindUserByLoginTokenRequest
+	(*FindUserByLoginTokenResponse)(nil), // 3: profilestorage.FindUserByLoginTokenResponse
 	(*dto.UUID)(nil),                     // 4: dto.UUID
 }
-var file_playerstorage_service_proto_depIdxs = []int32{
-	4, // 0: playerstorage.AddUserRequest.loginToken:type_name -> dto.UUID
-	4, // 1: playerstorage.FindUserByLoginTokenRequest.loginToken:type_name -> dto.UUID
-	0, // 2: playerstorage.PlayerStorageService.AddUser:input_type -> playerstorage.AddUserRequest
-	2, // 3: playerstorage.PlayerStorageService.FindUser:input_type -> playerstorage.FindUserByLoginTokenRequest
-	1, // 4: playerstorage.PlayerStorageService.AddUser:output_type -> playerstorage.AddUserResponse
-	3, // 5: playerstorage.PlayerStorageService.FindUser:output_type -> playerstorage.FindUserByLoginTokenResponse
+var file_profilestorage_service_proto_depIdxs = []int32{
+	4, // 0: profilestorage.AddUserRequest.loginToken:type_name -> dto.UUID
+	4, // 1: profilestorage.FindUserByLoginTokenRequest.loginToken:type_name -> dto.UUID
+	0, // 2: profilestorage.ProfileStorageService.AddUser:input_type -> profilestorage.AddUserRequest
+	2, // 3: profilestorage.ProfileStorageService.FindUser:input_type -> profilestorage.FindUserByLoginTokenRequest
+	1, // 4: profilestorage.ProfileStorageService.AddUser:output_type -> profilestorage.AddUserResponse
+	3, // 5: profilestorage.ProfileStorageService.FindUser:output_type -> profilestorage.FindUserByLoginTokenResponse
 	4, // [4:6] is the sub-list for method output_type
 	2, // [2:4] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -253,26 +253,26 @@ var file_playerstorage_service_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_playerstorage_service_proto_init() }
-func file_playerstorage_service_proto_init() {
-	if File_playerstorage_service_proto != nil {
+func init() { file_profilestorage_service_proto_init() }
+func file_profilestorage_service_proto_init() {
+	if File_profilestorage_service_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_playerstorage_service_proto_rawDesc), len(file_playerstorage_service_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_profilestorage_service_proto_rawDesc), len(file_profilestorage_service_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_playerstorage_service_proto_goTypes,
-		DependencyIndexes: file_playerstorage_service_proto_depIdxs,
-		MessageInfos:      file_playerstorage_service_proto_msgTypes,
+		GoTypes:           file_profilestorage_service_proto_goTypes,
+		DependencyIndexes: file_profilestorage_service_proto_depIdxs,
+		MessageInfos:      file_profilestorage_service_proto_msgTypes,
 	}.Build()
-	File_playerstorage_service_proto = out.File
-	file_playerstorage_service_proto_goTypes = nil
-	file_playerstorage_service_proto_depIdxs = nil
+	File_profilestorage_service_proto = out.File
+	file_profilestorage_service_proto_goTypes = nil
+	file_profilestorage_service_proto_depIdxs = nil
 }

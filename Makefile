@@ -32,3 +32,12 @@ golangci-lint:
 
 test:
 	docker run --rm -v $(CURDIR):/app -w /app golang:$(GOLANG_VERSION) go test ./...
+
+go-mod-tidy:
+	docker run --rm -v $(CURDIR):/app -w /app golang:$(GOLANG_VERSION) go mod tidy
+
+gen_sqlc:
+	docker run -t --rm \
+		-v $(CURDIR):/app \
+		-w /app \
+		sqlc/sqlc generate -f services/profile-storage/sqlc.yaml

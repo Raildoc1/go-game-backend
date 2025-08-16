@@ -60,6 +60,10 @@ linters:
       ignore-sigs:
         - errors.Join
         - fmt.Errorf
+        - google.golang.org/grpc/status.Errorf
+        - google.golang.org/grpc/status.Error
+        - (*go-game-backend/pkg/redis.Storage).DoWithTransaction
+        - (*go-game-backend/pkg/redis.Storage).Do
   exclusions:
     generated: lax
     rules:
