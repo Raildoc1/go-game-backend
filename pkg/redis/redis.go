@@ -15,10 +15,13 @@ import (
 
 const redisPipelineKey string = "redisPipeline"
 
+// Config defines options for connecting to a Redis server.
 type Config struct {
 	ServerAddr string `yaml:"server-address"`
 }
 
+// Storage wraps a Redis client and provides helpers for executing commands
+// and managing distributed locks.
 type Storage struct {
 	cfg    *Config
 	rdb    *redis.Client
@@ -26,6 +29,8 @@ type Storage struct {
 	logger *logging.ZapLogger
 }
 
+// New creates a Storage instance configured with the provided settings and
+// logger.
 func New(cfg *Config, logger *logging.ZapLogger) *Storage {
 	rdb := redis.NewClient(&redis.Options{Addr: cfg.ServerAddr})
 	locker := redislock.New(rdb)
@@ -37,6 +42,7 @@ func New(cfg *Config, logger *logging.ZapLogger) *Storage {
 	}
 }
 
+// Stop closes the underlying Redis client connection.
 func (s *Storage) Stop() error {
 	err := s.rdb.Close()
 	if err != nil {
@@ -45,6 +51,8 @@ func (s *Storage) Stop() error {
 	return nil
 }
 
+// DoWithTransaction executes the provided function within a Redis transaction
+// context.
 func (s *Storage) DoWithTransaction(ctx context.Context, f func(ctx context.Context) error) error {
 	_, err := s.rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
 		ctxWithPipe := context.WithValue(ctx, redisPipelineKey, pipe)
@@ -57,6 +65,8 @@ func (s *Storage) DoWithTransaction(ctx context.Context, f func(ctx context.Cont
 	return err
 }
 
+// Do executes the provided function with a Redis Cmdable derived from the
+// context.
 func (s *Storage) Do(ctx context.Context, f func(ctx context.Context, cmdable redis.Cmdable) error) error {
 	cmdable, err := s.getCmdFromCtx(ctx)
 	if err != nil {
@@ -71,6 +81,8 @@ func (s *Storage) Do(ctx context.Context, f func(ctx context.Context, cmdable re
 	return nil
 }
 
+// DoWithLock obtains a distributed lock for the specified key and executes the
+// supplied function while holding the lock.
 func (s *Storage) DoWithLock(
 	ctx context.Context,
 	key string,

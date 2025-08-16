@@ -25,9 +25,13 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// Config holds the configuration for the auth service.
 type Config struct {
-	Service           *service.Config           `yaml:"service"`
-	HTTP              *service.HTTPServerConfig `yaml:"http"`
+	// Service contains generic service configuration such as version.
+	Service *service.Config `yaml:"service"`
+	// HTTP defines settings for the HTTP server.
+	HTTP *service.HTTPServerConfig `yaml:"http"`
+	// ShutdownTimeout specifies how long to wait for graceful shutdown.
 	AuthService       *authserv.Config          `yaml:"auth-service"`
 	Redis             *redisstore.Config        `yaml:"redis"`
 	TokenFactory      *tknfactory.Config        `yaml:"token-factory"`

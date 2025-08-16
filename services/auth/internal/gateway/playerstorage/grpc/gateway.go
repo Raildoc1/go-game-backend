@@ -14,10 +14,12 @@ import (
 	"google.golang.org/grpc"
 )
 
+// Config holds settings for connecting to the player storage gRPC service.
 type Config struct {
 	ServerAddress string `yaml:"server-address"`
 }
 
+// Gateway provides access to the remote player storage service via gRPC.
 type Gateway struct {
 	conn          *grpc.ClientConn
 	playerStorage pb.PlayerStorageServiceClient
@@ -25,6 +27,7 @@ type Gateway struct {
 
 var _ auth.PlayerStorageGateway = (*Gateway)(nil)
 
+// New creates a new Gateway using the given configuration.
 func New(cfg *Config) (*Gateway, error) {
 	conn, err := grpcutils.Connect(cfg.ServerAddress)
 	if err != nil {
@@ -37,6 +40,7 @@ func New(cfg *Config) (*Gateway, error) {
 	}, nil
 }
 
+// Stop closes the underlying gRPC connection.
 func (g *Gateway) Stop() error {
 	err := g.conn.Close()
 	if err != nil {
@@ -45,6 +49,8 @@ func (g *Gateway) Stop() error {
 	return nil
 }
 
+// AddUser creates a new user in the player storage service using the provided
+// login token and returns the new user ID.
 func (g *Gateway) AddUser(ctx context.Context, loginToken uuid.UUID) (userID int64, err error) {
 	req := models.AddUserRequestToProto(loginToken)
 	resp, err := g.playerStorage.AddUser(ctx, req)
@@ -54,6 +60,8 @@ func (g *Gateway) AddUser(ctx context.Context, loginToken uuid.UUID) (userID int
 	return models.AddUserResponseFromProto(resp), nil
 }
 
+// FindUserByLoginToken retrieves a user ID associated with the specified login
+// token.
 func (g *Gateway) FindUserByLoginToken(ctx context.Context, loginToken uuid.UUID) (userID int64, err error) {
 	req := models.FindUserByLoginTokenRequestToProto(loginToken)
 	resp, err := g.playerStorage.FindUser(ctx, req)

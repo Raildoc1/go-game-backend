@@ -15,22 +15,27 @@ import (
 	auth "go-game-backend/services/auth/internal/services/auth"
 )
 
+// Repository implements a session repository backed by Redis.
 type Repository struct {
 	store *redisstore.Storage
 }
 
 var _ auth.SessionRepository = (*Repository)(nil)
 
+// New creates a new Repository instance.
 func New(store *redisstore.Storage) *Repository {
 	return &Repository{
 		store: store,
 	}
 }
 
+// DoWithTransaction executes the given function within a Redis transaction.
 func (r *Repository) DoWithTransaction(ctx context.Context, f futils.CtxF) error {
 	return r.store.DoWithTransaction(ctx, f)
 }
 
+// DoWithPlayerLock obtains a distributed lock for a specific user and runs the
+// provided function while holding that lock.
 func (r *Repository) DoWithPlayerLock(ctx context.Context, userID int64, ttl time.Duration, f futils.CtxF) error {
 	key := fmt.Sprintf("lock:player:%v", userID)
 	err := r.store.DoWithLock(ctx, key, ttl, f)
@@ -40,6 +45,8 @@ func (r *Repository) DoWithPlayerLock(ctx context.Context, userID int64, ttl tim
 	return nil
 }
 
+// SetSessionToken stores a session token for the given user with an expiration
+// time.
 func (r *Repository) SetSessionToken(ctx context.Context, userID int64, token uuid.UUID, expiresAt time.Time) error {
 	return r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
 		key := fmt.Sprintf("session_token:%v", userID)
@@ -58,6 +65,7 @@ func (r *Repository) SetSessionToken(ctx context.Context, userID int64, token uu
 	})
 }
 
+// SetRefreshToken stores a refresh token and its associated session info.
 func (r *Repository) SetRefreshToken(
 	ctx context.Context,
 	token uuid.UUID,
@@ -83,6 +91,7 @@ func (r *Repository) SetRefreshToken(
 	})
 }
 
+// RemoveRefreshToken deletes a refresh token from the store.
 func (r *Repository) RemoveRefreshToken(ctx context.Context, token uuid.UUID) error {
 	return r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {
 		key := fmt.Sprintf("refresh_token:%s", token)
@@ -96,6 +105,8 @@ func (r *Repository) RemoveRefreshToken(ctx context.Context, token uuid.UUID) er
 	})
 }
 
+// GetSessionInfo retrieves session information stored under the given refresh
+// token.
 func (r *Repository) GetSessionInfo(ctx context.Context, refreshToken uuid.UUID) (dto.SessionInfo, error) {
 	var sessionInfo dto.SessionInfo
 	err := r.store.Do(ctx, func(ctx context.Context, cmdable redis.Cmdable) error {

@@ -12,15 +12,19 @@ import (
 	"github.com/google/uuid"
 )
 
+// Config holds configuration for the authentication service.
 type Config struct {
 	PlayerLockTTL time.Duration `yaml:"player-lock-ttl"`
 }
 
+// PlayerStorageGateway defines the required operations for interacting with
+// the player storage service.
 type PlayerStorageGateway interface {
 	AddUser(ctx context.Context, loginToken uuid.UUID) (userID int64, err error)
 	FindUserByLoginToken(ctx context.Context, loginToken uuid.UUID) (userID int64, err error)
 }
 
+// SessionRepository describes the persistence layer for session information.
 type SessionRepository interface {
 	DoWithTransaction(ctx context.Context, f futils.CtxF) error
 	DoWithPlayerLock(ctx context.Context, userID int64, ttl time.Duration, f futils.CtxF) error
@@ -30,6 +34,8 @@ type SessionRepository interface {
 	GetSessionInfo(ctx context.Context, refreshToken uuid.UUID) (dto.SessionInfo, error)
 }
 
+// Service provides authentication related operations such as registration,
+// login and token refresh.
 type Service struct {
 	cfg               *Config
 	userRepository    PlayerStorageGateway
@@ -37,6 +43,7 @@ type Service struct {
 	tokensFactory     *tknfactory.TokensFactory
 }
 
+// New creates a new Service instance with the supplied dependencies.
 func New(
 	cfg *Config,
 	userRepository PlayerStorageGateway,
@@ -51,6 +58,8 @@ func New(
 	}
 }
 
+// Register creates a new user using the provided login token and returns a
+// session with access and refresh tokens.
 func (l *Service) Register(ctx context.Context, req *models.RegisterRequest) (resp *models.LoginRespose, err error) {
 	userID, err := l.userRepository.AddUser(ctx, req.LoginToken)
 	if err != nil {
@@ -65,6 +74,7 @@ func (l *Service) Register(ctx context.Context, req *models.RegisterRequest) (re
 	return sessionInfo, nil
 }
 
+// Login authenticates a user and starts a new session.
 func (l *Service) Login(ctx context.Context, req *models.LoginRequest) (resp *models.LoginRespose, err error) {
 	userID, err := l.userRepository.FindUserByLoginToken(ctx, req.LoginToken)
 	if err != nil {
@@ -132,6 +142,8 @@ func (l *Service) startSession(ctx context.Context, userID int64) (resp *models.
 	return resp, nil
 }
 
+// RefreshToken exchanges a refresh token for a new pair of access and refresh
+// tokens.
 func (l *Service) RefreshToken(ctx context.Context, req *models.RefreshTokenRequest) (resp *models.LoginRespose, err error) {
 	utcNow := time.Now().UTC()
 

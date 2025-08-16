@@ -16,8 +16,12 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
+// HTTPServerConfig contains configuration for the optional HTTP server.
 type HTTPServerConfig struct {
-	Address         string        `yaml:"address"`
+	// Address is the address the HTTP server listens on.
+	Address string `yaml:"address"`
+	// ShutdownTimeout defines how long the server has to gracefully
+	// shutdown.
 	ShutdownTimeout time.Duration `yaml:"shutdown-timeout"`
 }
 
@@ -26,7 +30,9 @@ type httpServerSetup struct {
 	HandlerFactory func() http.Handler
 }
 
+// GRPCServerConfig contains configuration for the optional gRPC server.
 type GRPCServerConfig struct {
+	// Address is the address the gRPC server listens on.
 	Address string `yaml:"address"`
 }
 
@@ -35,7 +41,9 @@ type grpcServerSetup struct {
 	SetupServerFunc func(*grpc.Server)
 }
 
+// DeinitSetupConfig holds deinitialization settings.
 type DeinitSetupConfig struct {
+	// ShutdownTimeout defines how long deinitialization is allowed to take.
 	ShutdownTimeout time.Duration `xml:"shutdown-timeout"`
 }
 
@@ -44,6 +52,8 @@ type deinitSetup struct {
 	DeinitFunc func() error
 }
 
+// Service orchestrates the lifecycle of application components such as HTTP
+// and gRPC servers.
 type Service struct {
 	initFunc        func(context.Context) error
 	httpServerSetup *httpServerSetup
@@ -62,6 +72,9 @@ func newService(
 	}
 }
 
+// Run starts the configured service components and blocks until one of them
+// returns an error or the context is cancelled. It attempts a graceful
+// shutdown within the given timeout.
 func (s *Service) Run(rootCtx context.Context, shutdownTimeout time.Duration) error {
 	syscallCtx, cancel := signal.NotifyContext(
 		rootCtx,

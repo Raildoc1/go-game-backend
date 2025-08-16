@@ -11,17 +11,21 @@ import (
 	"go.uber.org/zap"
 )
 
+// Logic defines the business logic required by the HTTP handler.
 type Logic interface {
 	Register(ctx context.Context, req *models.RegisterRequest) (resp *models.LoginRespose, err error)
 	Login(ctx context.Context, req *models.LoginRequest) (resp *models.LoginRespose, err error)
 	RefreshToken(ctx context.Context, req *models.RefreshTokenRequest) (resp *models.LoginRespose, err error)
 }
 
+// Handler provides HTTP endpoints for authentication operations.
 type Handler struct {
 	logic  Logic
 	logger *logging.ZapLogger
 }
 
+// New creates a new HTTP handler with the provided logic implementation and
+// logger.
 func New(logic Logic, logger *logging.ZapLogger) *Handler {
 	return &Handler{
 		logic:  logic,
@@ -29,6 +33,7 @@ func New(logic Logic, logger *logging.ZapLogger) *Handler {
 	}
 }
 
+// Register handles user registration requests.
 func (h *Handler) Register(c *gin.Context) {
 	var req models.RegisterRequest
 	if err := c.BindJSON(&req); err != nil {
@@ -45,6 +50,7 @@ func (h *Handler) Register(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+// Login processes user login requests.
 func (h *Handler) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.BindJSON(&req); err != nil {
@@ -61,6 +67,7 @@ func (h *Handler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+// RefreshToken handles token refresh requests.
 func (h *Handler) RefreshToken(c *gin.Context) {
 	var req models.RefreshTokenRequest
 	if err := c.BindJSON(&req); err != nil {

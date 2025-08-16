@@ -11,6 +11,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// LoadConfig loads a YAML configuration file into the provided type. The
+// defaultPath is used when the `-config` flag is not supplied. If debugWriter
+// is non-nil the loaded configuration will be written to it. The onCloseError
+// callback is invoked when closing the configuration file fails.
 func LoadConfig[TConfig any](defaultPath string, debugWriter io.Writer, onCloseError func(error)) (*TConfig, error) {
 	var configPath string
 	flag.StringVar(&configPath, "config", defaultPath, "config in YAML format")
