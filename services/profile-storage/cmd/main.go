@@ -3,16 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
-	"go-game-backend/pkg/logging"
-	"go-game-backend/pkg/service"
 	"log"
 	"os"
 	"time"
 
 	pb "go-game-backend/gen/profilestorage"
+	"go-game-backend/pkg/logging"
+	postgresstore "go-game-backend/pkg/postgres"
+	"go-game-backend/pkg/service"
 	grpcserver "go-game-backend/services/profile-storage/internal/handlers/grpc"
 	postgresrepo "go-game-backend/services/profile-storage/internal/repository/postgres"
 	profilestorage "go-game-backend/services/profile-storage/internal/services/profilestorage"
+	"go-game-backend/services/profile-storage/migrations"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -23,7 +25,7 @@ import (
 type Config struct {
 	Service         *service.Config           `yaml:"service"`
 	GRPC            *service.GRPCServerConfig `yaml:"grpc"`
-	Postgres        *postgresrepo.Config      `yaml:"postgres"`
+	Postgres        *postgresstore.Config     `yaml:"postgres"`
 	ShutdownTimeout time.Duration             `yaml:"shutdown-timeout"`
 }
 
@@ -57,10 +59,17 @@ func main() {
 }
 
 func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
-	repo, err := postgresrepo.New(ctx, cfg.Postgres)
+	storage, err := postgresstore.New(ctx, cfg.Postgres)
 	if err != nil {
-		return fmt.Errorf("failed to create repository: %w", err)
+		return fmt.Errorf("failed to create storage: %w", err)
 	}
+	defer service.Stop(ctx, storage, "postgres storage", logger)
+
+	if err := storage.Migrate(migrations.Files, "."); err != nil {
+		return fmt.Errorf("migrate: %w", err)
+	}
+
+	repo := postgresrepo.New(storage.Pool())
 	defer service.Stop(ctx, repo, "postgres repository", logger)
 
 	logicSvc := profilestorage.New(repo)

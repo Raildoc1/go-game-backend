@@ -2,9 +2,9 @@ version: "2"
 sql:
   - engine: postgresql
     schema:
-      - internal/repository/postgres/sqlc/schema.sql
+      - migrations/*.sql
     queries:
-      - internal/repository/postgres/sqlc/queries.sql
+      - internal/repository/postgres/sqlc/src/*.sql
     gen:
       go:
         package: sqlc

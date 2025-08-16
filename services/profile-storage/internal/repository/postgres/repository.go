@@ -1,3 +1,4 @@
+// Package postgresrepo provides PostgreSQL repository implementation.
 package postgresrepo
 
 import (
@@ -11,31 +12,19 @@ import (
 	"go-game-backend/services/profile-storage/internal/repository/postgres/sqlc"
 )
 
-// Config holds PostgreSQL connection settings.
-type Config struct {
-	DSN string `yaml:"dsn"`
-}
-
 // Repository provides access to player credentials stored in PostgreSQL.
 type Repository struct {
 	pool    *pgxpool.Pool
 	queries *sqlc.Queries
 }
 
-// New creates a new Repository with the given configuration.
-func New(ctx context.Context, cfg *Config) (*Repository, error) {
-	pool, err := pgxpool.New(ctx, cfg.DSN)
-	if err != nil {
-		return nil, fmt.Errorf("pgx pool connect: %w", err)
-	}
-	return &Repository{pool: pool, queries: sqlc.New(pool)}, nil
+// New creates a new Repository using the provided pgx pool.
+func New(pool *pgxpool.Pool) *Repository {
+	return &Repository{pool: pool, queries: sqlc.New(pool)}
 }
 
-// Stop closes the database connection pool.
-func (r *Repository) Stop() error {
-	r.pool.Close()
-	return nil
-}
+// Stop closes resources held by the repository. The underlying pool is managed externally.
+func (r *Repository) Stop() error { return nil }
 
 // AddUser inserts a new user with the specified login token and returns its ID.
 func (r *Repository) AddUser(ctx context.Context, loginToken uuid.UUID) (int64, error) {
