@@ -1,4 +1,4 @@
-name: Test
+name: Go Mod Tidy
 
 on:
   push:
@@ -10,5 +10,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run tests
-        run: make test
+      - name: Run go mod tidy
+        run: make go-mod-tidy

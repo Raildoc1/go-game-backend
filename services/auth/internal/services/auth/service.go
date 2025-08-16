@@ -17,9 +17,9 @@ type Config struct {
 	PlayerLockTTL time.Duration `yaml:"player-lock-ttl"`
 }
 
-// PlayerStorageGateway defines the required operations for interacting with
-// the player storage service.
-type PlayerStorageGateway interface {
+// ProfileStorageGateway defines the required operations for interacting with
+// the profile storage service.
+type ProfileStorageGateway interface {
 	AddUser(ctx context.Context, loginToken uuid.UUID) (userID int64, err error)
 	FindUserByLoginToken(ctx context.Context, loginToken uuid.UUID) (userID int64, err error)
 }
@@ -38,7 +38,7 @@ type SessionRepository interface {
 // login and token refresh.
 type Service struct {
 	cfg               *Config
-	userRepository    PlayerStorageGateway
+	profileStorage    ProfileStorageGateway
 	sessionRepository SessionRepository
 	tokensFactory     *tknfactory.TokensFactory
 }
@@ -46,13 +46,13 @@ type Service struct {
 // New creates a new Service instance with the supplied dependencies.
 func New(
 	cfg *Config,
-	userRepository PlayerStorageGateway,
+	profileStorage ProfileStorageGateway,
 	sessionRepository SessionRepository,
 	tokensFactory *tknfactory.TokensFactory,
 ) *Service {
 	return &Service{
 		cfg:               cfg,
-		userRepository:    userRepository,
+		profileStorage:    profileStorage,
 		sessionRepository: sessionRepository,
 		tokensFactory:     tokensFactory,
 	}
@@ -61,7 +61,7 @@ func New(
 // Register creates a new user using the provided login token and returns a
 // session with access and refresh tokens.
 func (l *Service) Register(ctx context.Context, req *models.RegisterRequest) (resp *models.LoginRespose, err error) {
-	userID, err := l.userRepository.AddUser(ctx, req.LoginToken)
+	userID, err := l.profileStorage.AddUser(ctx, req.LoginToken)
 	if err != nil {
 		return nil, fmt.Errorf("add user failed: %w", err)
 	}
@@ -76,7 +76,7 @@ func (l *Service) Register(ctx context.Context, req *models.RegisterRequest) (re
 
 // Login authenticates a user and starts a new session.
 func (l *Service) Login(ctx context.Context, req *models.LoginRequest) (resp *models.LoginRespose, err error) {
-	userID, err := l.userRepository.FindUserByLoginToken(ctx, req.LoginToken)
+	userID, err := l.profileStorage.FindUserByLoginToken(ctx, req.LoginToken)
 	if err != nil {
 		return nil, fmt.Errorf("find user failed: %w", err)
 	}
