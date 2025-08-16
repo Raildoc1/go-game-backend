@@ -29,3 +29,6 @@ golangci-lint-fix:
 
 golangci-lint:
 	docker run -t --rm -v .:/app -w /app golangci/golangci-lint:v2.4.0-alpine golangci-lint run
+
+test:
+	go test ./...
