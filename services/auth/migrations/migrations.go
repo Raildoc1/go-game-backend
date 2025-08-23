@@ -1,4 +1,4 @@
-// Package migrations embeds SQL migration files for profile storage service.
+// Package migrations embeds SQL migration files for the auth service.
 package migrations
 
 import "embed"

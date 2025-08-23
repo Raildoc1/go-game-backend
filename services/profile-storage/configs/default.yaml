@@ -1,7 +1,0 @@
-service:
-  version: 0.0.1
-grpc:
-  address: :9090
-postgres:
-  dsn: postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
-shutdown-timeout: 5s

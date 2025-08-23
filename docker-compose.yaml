@@ -18,17 +18,16 @@ services:
     ports:
       - "8081:8080"
     depends_on:
-      - profile-storage
       - redis
-  profile-storage:
+      - postgres
+  auth-migrate:
     build:
       context: ./
       args:
         CGO_ENABLED: 0
-        GO_SERVICE: profile-storage
+        GO_SERVICE: auth
+        GO_CMD: ./services/auth/cmd/migrate/main.go
         BUILD_TYPE: default
-    ports:
-      - "9090:9090"
     depends_on:
       - postgres
   redis:

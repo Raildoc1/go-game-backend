@@ -4,6 +4,7 @@ ARG CGO_ENABLED=0
 ARG GO_SERVICE
 ARG TARGETARCH
 ARG BUILD_TYPE=default
+ARG GO_CMD=./services/${GO_SERVICE}/cmd/main.go
 RUN echo $TARGETARCH
 
 WORKDIR /go-game-backend/
@@ -17,7 +18,7 @@ COPY . .
 RUN CGO_ENABLED=$CGO_ENABLED \
     GOOS=linux \
     GOARCH=$TARGETARCH \
-    go build -o server ./services/${GO_SERVICE}/cmd/main.go
+    go build -o server $GO_CMD
 
 FROM alpine:latest AS release-stage
 

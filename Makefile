@@ -12,7 +12,15 @@ build-auth:
 		--build-arg GO_SERVICE=auth    \
 		--build-arg BUILD_TYPE=default
 
-build-all: build-players build-auth
+build-auth-migrate:
+	docker build .                                             \
+		-t auth-migrate:latest                                 \
+		--build-arg CGO_ENABLED=0                              \
+		--build-arg GO_SERVICE=auth                            \
+		--build-arg GO_CMD=./services/auth/cmd/migrate/main.go \
+		--build-arg BUILD_TYPE=default
+
+build-all: build-players build-auth build-auth-migrate
 
 PROTO_FILES := $(shell find api -name "*.proto")
 GOLANG_VERSION ?= 1.24
@@ -37,7 +45,7 @@ go-mod-tidy:
 	docker run --rm -v $(CURDIR):/app -w /app golang:$(GOLANG_VERSION) go mod tidy
 
 gen_sqlc:
-	docker run -t --rm \
-		-v $(CURDIR):/app \
-		-w /app \
-		sqlc/sqlc generate -f services/profile-storage/sqlc.yaml
+	docker run -t --rm                                \
+		-v $(CURDIR):/app                             \
+		-w /app                                       \
+		sqlc/sqlc generate -f services/auth/sqlc.yaml

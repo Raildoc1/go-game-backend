@@ -14,10 +14,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/jwtauth/v5"
 
+	postgresstore "go-game-backend/pkg/postgres"
 	redisstore "go-game-backend/pkg/redis"
-
-	profilestoragegrpc "go-game-backend/services/auth/internal/gateway/profilestorage/grpc"
 	httphand "go-game-backend/services/auth/internal/handlers/http"
+	postgresrepo "go-game-backend/services/auth/internal/repository/postgres"
 	redisrepo "go-game-backend/services/auth/internal/repository/redis"
 	authserv "go-game-backend/services/auth/internal/services/auth"
 	tknfactory "go-game-backend/services/auth/internal/services/token"
@@ -27,14 +27,14 @@ import (
 
 // Config holds the configuration for the auth service.
 type Config struct {
-	Service            *service.Config            `yaml:"service"`
-	HTTP               *service.HTTPServerConfig  `yaml:"http"`
-	AuthService        *authserv.Config           `yaml:"auth-service"`
-	Redis              *redisstore.Config         `yaml:"redis"`
-	TokenFactory       *tknfactory.Config         `yaml:"token-factory"`
-	ProfileStorageGRPC *profilestoragegrpc.Config `yaml:"profile-storage-grpc"`
-	JWTConfig          *JWTConfig                 `yaml:"jwt"`
-	ShutdownTimeout    time.Duration              `yaml:"shutdown-timeout"`
+	Service         *service.Config           `yaml:"service"`
+	HTTP            *service.HTTPServerConfig `yaml:"http"`
+	AuthService     *authserv.Config          `yaml:"auth-service"`
+	Redis           *redisstore.Config        `yaml:"redis"`
+	TokenFactory    *tknfactory.Config        `yaml:"token-factory"`
+	Postgres        *postgresstore.Config     `yaml:"postgres"`
+	JWTConfig       *JWTConfig                `yaml:"jwt"`
+	ShutdownTimeout time.Duration             `yaml:"shutdown-timeout"`
 }
 
 // JWTConfig holds the configuration for the JWT generation.
@@ -82,13 +82,16 @@ func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 
 	redisRepo := redisrepo.New(redisStore)
 
-	profileStorageGateway, err := profilestoragegrpc.New(cfg.ProfileStorageGRPC)
+	storage, err := postgresstore.New(ctx, cfg.Postgres)
 	if err != nil {
-		return fmt.Errorf("failed to create profile storage gateway: %w", err)
+		return fmt.Errorf("failed to create storage: %w", err)
 	}
-	defer service.Stop(ctx, profileStorageGateway, "profile storage gateway", logger)
+	defer service.Stop(ctx, storage, "postgres storage", logger)
 
-	authService := authserv.New(cfg.AuthService, profileStorageGateway, redisRepo, tknFactory)
+	repo := postgresrepo.New(storage.Pool())
+	defer service.Stop(ctx, repo, "postgres repository", logger)
+
+	authService := authserv.New(cfg.AuthService, repo, redisRepo, tknFactory)
 	httpHandler := httphand.New(authService, logger)
 
 	serv := service.NewBuilder().

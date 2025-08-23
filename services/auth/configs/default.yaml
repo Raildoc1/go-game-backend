@@ -11,8 +11,8 @@ redis:
 token-factory:
   access-token-ttl: 15m
   refresh-token-ttl: 720h #30 days
-profile-storage-grpc:
-  server-address: profile-storage:9090
+postgres:
+  dsn: postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
 jwt:
   algorithm: HS256
   secret: secret
