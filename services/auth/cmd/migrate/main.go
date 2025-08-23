@@ -4,13 +4,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"go-game-backend/pkg/logging"
+	"go-game-backend/pkg/service"
+	"go-game-backend/services/auth/migrations"
 	"log"
 	"os"
 
-	"go-game-backend/pkg/logging"
 	postgresstore "go-game-backend/pkg/postgres"
-	"go-game-backend/pkg/service"
-	"go-game-backend/services/auth/migrations"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
