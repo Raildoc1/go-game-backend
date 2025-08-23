@@ -29,7 +29,7 @@ func (r *Repository) Stop() error { return nil }
 func (r *Repository) AddUser(ctx context.Context, loginToken uuid.UUID) (int64, error) {
 	id, err := r.queries.AddUser(ctx, pgtype.UUID{Bytes: loginToken, Valid: true})
 	if err != nil {
-		return 0, fmt.Errorf("insert user: %w", err)
+		return 0, fmt.Errorf("insert user query: %w", err)
 	}
 	return id, nil
 }
@@ -38,7 +38,7 @@ func (r *Repository) AddUser(ctx context.Context, loginToken uuid.UUID) (int64, 
 func (r *Repository) FindUserByLoginToken(ctx context.Context, loginToken uuid.UUID) (int64, error) {
 	id, err := r.queries.FindUserByLoginToken(ctx, pgtype.UUID{Bytes: loginToken, Valid: true})
 	if err != nil {
-		return 0, fmt.Errorf("find user: %w", err)
+		return 0, fmt.Errorf("find user query: %w", err)
 	}
 	return id, nil
 }

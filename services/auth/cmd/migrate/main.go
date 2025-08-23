@@ -1,3 +1,4 @@
+// Command auth-migrate runs database migrations for the auth service.
 package main
 
 import (
@@ -15,6 +16,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// Config holds service and PostgreSQL configuration for the migration.
 type Config struct {
 	Service  *service.Config       `yaml:"service"`
 	Postgres *postgresstore.Config `yaml:"postgres"`
@@ -48,6 +50,7 @@ func main() {
 	logger.InfoCtx(ctx, "migration completed")
 }
 
+// run executes the database migrations.
 func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 	storage, err := postgresstore.New(ctx, cfg.Postgres)
 	if err != nil {
