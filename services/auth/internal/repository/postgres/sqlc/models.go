@@ -8,6 +8,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Outbox struct {
+	ID          int64
+	Topic       string
+	Payload     []byte
+	CreatedAt   pgtype.Timestamptz
+	ProcessedAt pgtype.Timestamptz
+}
+
 type PlayerCredential struct {
 	ID         int64
 	LoginToken pgtype.UUID
