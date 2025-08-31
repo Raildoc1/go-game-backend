@@ -26,10 +26,10 @@ PROTO_FILES := $(shell find api -name "*.proto")
 GOLANG_VERSION ?= 1.24
 
 gen_proto:
-	docker run -t --rm                                            \
-    	        -v $(CURDIR):/app                                 \
-    	        -w /app                                           \
-    	        bufbuild/buf generate --template buf.gen.yaml api
+	docker run -t --rm                                    \
+    	-v $(CURDIR):/app                                 \
+    	-w /app                                           \
+    	bufbuild/buf generate --template buf.gen.yaml api
 
 
 golangci-lint-fix:
@@ -49,3 +49,7 @@ gen_sqlc:
 		-v $(CURDIR):/app                             \
 		-w /app                                       \
 		sqlc/sqlc generate -f services/auth/sqlc.yaml
+	docker run -t --rm                                \
+		-v $(CURDIR):/app                             \
+		-w /app                                       \
+		sqlc/sqlc generate -f pkg/outbox/sqlc.yaml

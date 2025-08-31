@@ -4,8 +4,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"go-game-backend/pkg/kafka"
 	"go-game-backend/pkg/logging"
 	"go-game-backend/pkg/service"
+	playerkafka "go-game-backend/services/players/internal/ingester/kafka"
 	"log"
 	"net/http"
 	"os"
@@ -21,6 +23,7 @@ import (
 type Config struct {
 	Service         *service.Config           `yaml:"service"`
 	HTTP            *service.HTTPServerConfig `yaml:"http"`
+	Kafka           *kafka.ReaderConfig       `yaml:"kafka"`
 	ShutdownTimeout time.Duration             `yaml:"shutdown-timeout"`
 }
 
@@ -53,8 +56,12 @@ func main() {
 	logger.InfoCtx(ctx, "application stopped successfully")
 }
 
-func run(ctx context.Context, cfg *Config, _ *logging.ZapLogger) error {
+func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
+	reader := kafka.NewReader(cfg.Kafka)
+	ing := playerkafka.NewUserCreated(reader, logger)
+
 	serv := service.NewBuilder().
+		WithGo(func(ctx context.Context) error { return ing.Run(ctx) }).
 		WithHTTPServer(cfg.HTTP, func() http.Handler {
 			router := gin.Default()
 

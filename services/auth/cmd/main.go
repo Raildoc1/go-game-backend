@@ -5,7 +5,9 @@ import (
 	"context"
 	"fmt"
 	"go-game-backend/pkg/jwtfactory"
+	"go-game-backend/pkg/kafka"
 	"go-game-backend/pkg/logging"
+	outboxpkg "go-game-backend/pkg/outbox"
 	"go-game-backend/pkg/service"
 	"log"
 	"net/http"
@@ -34,6 +36,7 @@ type Config struct {
 	Redis           *redisstore.Config        `yaml:"redis"`
 	TokenFactory    *tknfactory.Config        `yaml:"token-factory"`
 	Postgres        *postgresstore.Config     `yaml:"postgres"`
+	Kafka           *kafka.ForwarderConfig    `yaml:"kafka"`
 	JWTConfig       *JWTConfig                `yaml:"jwt"`
 	ShutdownTimeout time.Duration             `yaml:"shutdown-timeout"`
 }
@@ -83,19 +86,28 @@ func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 
 	redisRepo := redisrepo.New(redisStore)
 
-	storage, err := postgresstore.New(ctx, cfg.Postgres)
+	storage, err := postgresstore.NewStorage(ctx, cfg.Postgres)
 	if err != nil {
 		return fmt.Errorf("failed to create storage: %w", err)
 	}
 	defer service.Stop(ctx, storage, "postgres storage", logger)
 
-	repo := postgresrepo.New(storage.Pool())
+	repo := postgresrepo.New(storage.Pool(), logger)
 	defer service.Stop(ctx, repo, "postgres repository", logger)
 
-	authService := authserv.New(cfg.AuthService, repo, redisRepo, tknFactory)
+	outboxStore := outboxpkg.NewRepository(storage.Pool())
+	writer := kafka.NewWriter(cfg.Kafka.Brokers)
+	defer writer.Close()
+	forwarder := outboxpkg.NewForwarder(outboxStore, writer, cfg.Kafka.PollInterval, cfg.Kafka.BatchSize)
+
+	authService := authserv.New(cfg.AuthService, repo, redisRepo, tknFactory, outboxStore)
 	httpHandler := httphand.New(authService, logger)
 
 	serv := service.NewBuilder().
+		WithGo(func(ctx context.Context) error {
+			forwarder.Run(ctx)
+			return nil
+		}).
 		WithHTTPServer(cfg.HTTP, func() http.Handler {
 			router := gin.Default()
 

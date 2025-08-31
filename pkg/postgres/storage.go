@@ -26,8 +26,8 @@ type Storage struct {
 	pool *pgxpool.Pool
 }
 
-// New creates a new Storage with the given configuration.
-func New(ctx context.Context, cfg *Config) (*Storage, error) {
+// NewStorage	 creates a new Storage with the given configuration.
+func NewStorage(ctx context.Context, cfg *Config) (*Storage, error) {
 	pool, err := pgxpool.New(ctx, cfg.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("pgx pool connect: %w", err)
