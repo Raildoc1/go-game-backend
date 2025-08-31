@@ -61,7 +61,7 @@ func (s *Storage[TRepos]) Stop() error {
 	return nil
 }
 
-// DoWithTransaction executes the provided function within a Redis transaction
+// DoTx executes the provided function within a Redis transaction
 // context.
 func (s *Storage[TRepos]) DoTx(ctx context.Context, f futils.CtxFT[*TRepos]) error {
 	_, err := s.rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {

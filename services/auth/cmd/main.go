@@ -24,6 +24,7 @@ import (
 	redisrepo "go-game-backend/services/auth/internal/repository/redis"
 	authserv "go-game-backend/services/auth/internal/services/auth"
 	tknfactory "go-game-backend/services/auth/internal/services/token"
+	playerslocker "go-game-backend/services/players/pkg/locker"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -81,26 +82,23 @@ func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 	jwtFactory := jwtfactory.New(tokenAuth)
 	tknFactory := tknfactory.New(jwtFactory, cfg.TokenFactory)
 
-	redisStore := redisstore.New(cfg.Redis, logger)
-	defer service.Stop(ctx, redisStore, "redis storage", logger)
+	rxStorage := redisstore.New(cfg.Redis, logger, redisrepo.NewRepos)
+	defer service.Stop(ctx, rxStorage, "redis storage", logger)
 
-	redisRepo := redisrepo.New(redisStore)
-
-	storage, err := postgresstore.NewStorage(ctx, cfg.Postgres)
+	pgStorage, err := postgresstore.New(ctx, cfg.Postgres, postgresrepo.NewRepos)
 	if err != nil {
 		return fmt.Errorf("failed to create storage: %w", err)
 	}
-	defer service.Stop(ctx, storage, "postgres storage", logger)
+	defer service.Stop(ctx, pgStorage, "postgres storage", logger)
 
-	repo := postgresrepo.New(storage.Pool(), logger)
-	defer service.Stop(ctx, repo, "postgres repository", logger)
-
-	outboxStore := outboxpkg.NewRepository(storage.Pool())
+	outboxRepo := outboxpkg.NewRepository(pgStorage.Pool())
 	writer := kafka.NewWriter(cfg.Kafka.Brokers)
 	defer writer.Close()
-	forwarder := outboxpkg.NewForwarder(outboxStore, writer, cfg.Kafka.PollInterval, cfg.Kafka.BatchSize)
+	forwarder := outboxpkg.NewForwarder(outboxRepo, writer, cfg.Kafka.PollInterval, cfg.Kafka.BatchSize)
 
-	authService := authserv.New(cfg.AuthService, repo, redisRepo, tknFactory, outboxStore)
+	playerLocker := playerslocker.NewFromStorage(rxStorage, cfg.AuthService.PlayerLockTTL)
+
+	authService := authserv.New(cfg.AuthService, pgStorage, rxStorage, playerLocker, tknFactory)
 	httpHandler := httphand.New(authService, logger)
 
 	serv := service.NewBuilder().

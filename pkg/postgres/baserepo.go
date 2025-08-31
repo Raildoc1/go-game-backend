@@ -2,41 +2,29 @@ package postgresstore
 
 import (
 	"context"
+
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"go-game-backend/pkg/logging"
-	"go-game-backend/pkg/outbox/sqlc"
 )
 
-type ctxField string
-
-var txCtxField ctxField = "tx"
-
-type BaseRepo struct {
-	pool            *pgxpool.Pool
-	queries         *sqlc.Queries
-	logger          *logging.ZapLogger
-	defaultIsoLevel pgx.TxIsoLevel
+// txQuerier is a generic interface for sqlc query structs that can bind to a transaction.
+type txQuerier[Q any] interface {
+	WithTx(pgx.Tx) Q
 }
 
-func NewBaseRepo(
-	pool *pgxpool.Pool,
-	queries *sqlc.Queries,
-	logger *logging.ZapLogger,
-	defaultIsoLevel pgx.TxIsoLevel,
-) *BaseRepo {
-	return &BaseRepo{
-		pool:            pool,
-		queries:         queries,
-		logger:          logger,
-		defaultIsoLevel: defaultIsoLevel,
+// BaseRepo provides helper methods to access queries bound to context transactions.
+type BaseRepo[Q txQuerier[Q]] struct {
+	queries Q
+}
+
+// NewBaseRepo creates a BaseRepo using the provided queries instance.
+func NewBaseRepo[Q txQuerier[Q]](queries Q) BaseRepo[Q] {
+	return BaseRepo[Q]{queries: queries}
+}
+
+// Q returns queries bound to the transaction from context if present.
+func (r BaseRepo[Q]) Q(ctx context.Context) Q {
+	if tx := txFromCtx(ctx); tx != nil {
+		return r.queries.WithTx(tx)
 	}
-}
-
-func (r *BaseRepo) DoWithTransaction(ctx context.Context, f func(ctx context.Context) error) error {
-	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{
-		IsoLevel:       r.defaultIsoLevel,
-		AccessMode:     pgx.ReadWrite,
-	})
-	q := r.queries.WithTx(tx)
+	return r.queries
 }

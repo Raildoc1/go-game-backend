@@ -1,18 +1,14 @@
-// Package postgresstore provides PostgreSQL storage with migrations support.
+// Package postgresstore provides PostgreSQL storage with transaction helpers.
 package postgresstore
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
-	"io/fs"
 
-	"github.com/golang-migrate/migrate/v4"
-	pgxmigrate "github.com/golang-migrate/migrate/v4/database/pgx/v5"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"go-game-backend/pkg/futils"
+
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	_ "github.com/jackc/pgx/v5/stdlib" // register pgx driver for database/sql
 )
 
 // Config holds PostgreSQL connection settings.
@@ -20,61 +16,51 @@ type Config struct {
 	DSN string `yaml:"dsn"`
 }
 
-// Storage manages PostgreSQL connection pool and migrations.
-type Storage struct {
-	cfg  *Config
-	pool *pgxpool.Pool
+// Storage manages PostgreSQL connection pool and repositories.
+type Storage[TRepos any] struct {
+	cfg   *Config
+	pool  *pgxpool.Pool
+	repos *TRepos
 }
 
-// NewStorage	 creates a new Storage with the given configuration.
-func NewStorage(ctx context.Context, cfg *Config) (*Storage, error) {
+// New creates a new Storage with the given configuration and repository factory.
+func New[TRepos any](ctx context.Context, cfg *Config, factory func(*pgxpool.Pool) *TRepos) (*Storage[TRepos], error) {
 	pool, err := pgxpool.New(ctx, cfg.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("pgx pool connect: %w", err)
 	}
-	return &Storage{cfg: cfg, pool: pool}, nil
+	return &Storage[TRepos]{cfg: cfg, pool: pool, repos: factory(pool)}, nil
 }
 
 // Pool exposes underlying pgx pool.
-func (s *Storage) Pool() *pgxpool.Pool {
+func (s *Storage[TRepos]) Pool() *pgxpool.Pool {
 	return s.pool
 }
 
 // Stop closes the database connection pool.
-func (s *Storage) Stop() error {
+func (s *Storage[TRepos]) Stop() error {
 	s.pool.Close()
 	return nil
 }
 
-// Migrate applies migrations from the provided filesystem and directory.
-func (s *Storage) Migrate(migrations fs.FS, dir string) error {
-	if migrations == nil {
-		return nil
-	}
-
-	source, err := iofs.New(migrations, dir)
+// DoTx executes the provided function within a database transaction.
+func (s *Storage[TRepos]) DoTx(ctx context.Context, f futils.CtxFT[*TRepos]) error {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		return fmt.Errorf("iofs: %w", err)
+		return fmt.Errorf("begin tx: %w", err)
 	}
-
-	db, err := sql.Open("pgx", s.cfg.DSN)
-	if err != nil {
-		return fmt.Errorf("sql open: %w", err)
+	ctxWithTx := ctxWithTx(ctx, tx)
+	if err := f(ctxWithTx, s.repos); err != nil {
+		_ = tx.Rollback(ctx)
+		return err
 	}
-	defer func() { _ = db.Close() }()
-
-	driver, err := pgxmigrate.WithInstance(db, &pgxmigrate.Config{})
-	if err != nil {
-		return fmt.Errorf("migrate driver: %w", err)
-	}
-
-	m, err := migrate.NewWithInstance("iofs", source, "pgx5", driver)
-	if err != nil {
-		return fmt.Errorf("migrate instance: %w", err)
-	}
-
-	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		return fmt.Errorf("migrate up: %w", err)
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
 	}
 	return nil
+}
+
+// Raw returns underlying repositories instance.
+func (s *Storage[TRepos]) Raw() *TRepos {
+	return s.repos
 }

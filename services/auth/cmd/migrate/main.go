@@ -4,13 +4,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"go-game-backend/pkg/logging"
-	"go-game-backend/pkg/service"
-	"go-game-backend/services/auth/migrations"
 	"log"
 	"os"
 
+	"go-game-backend/pkg/logging"
 	postgresstore "go-game-backend/pkg/postgres"
+	"go-game-backend/pkg/service"
+	"go-game-backend/services/auth/migrations"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -52,13 +52,8 @@ func main() {
 
 // run executes the database migrations.
 func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
-	storage, err := postgresstore.New(ctx, cfg.Postgres)
-	if err != nil {
-		return fmt.Errorf("postgresstore creation: %w", err)
-	}
-	defer service.Stop(ctx, storage, "storage service", logger)
-
-	if err := storage.Migrate(migrations.Files, "."); err != nil {
+	migrator := postgresstore.NewMigrator(cfg.Postgres)
+	if err := migrator.Migrate(migrations.Files, "."); err != nil {
 		return fmt.Errorf("storage migration: %w", err)
 	}
 	return nil

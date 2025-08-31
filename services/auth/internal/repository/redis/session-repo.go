@@ -4,23 +4,19 @@ package redisrepo
 import (
 	"context"
 	"fmt"
-	"go-game-backend/services/auth/internal/dto"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
 	redisstore "go-game-backend/pkg/redis"
-
-	auth "go-game-backend/services/auth/internal/services/auth"
+	"go-game-backend/services/auth/internal/dto"
 )
 
 // SessionRepo implements a session repository backed by Redis.
 type SessionRepo struct {
 	redisstore.BaseRepo
 }
-
-var _ auth.SessionRepo = (*SessionRepo)(nil)
 
 // NewSessionRepo creates a new Session Repository instance.
 func NewSessionRepo(defaultCmdable redis.Cmdable) *SessionRepo {

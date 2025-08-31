@@ -5,13 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"go-game-backend/pkg/futils"
-	"go-game-backend/services/auth/internal/dto"
-	"go-game-backend/services/auth/internal/services/token"
-	"go-game-backend/services/auth/pkg/models"
 	"time"
 
-	"github.com/google/uuid"
+	"go-game-backend/pkg/futils"
+	postgresstore "go-game-backend/pkg/postgres"
+	redisstore "go-game-backend/pkg/redis"
+	"go-game-backend/services/auth/internal/dto"
+	postgresrepo "go-game-backend/services/auth/internal/repository/postgres"
+	redisrepo "go-game-backend/services/auth/internal/repository/redis"
+	"go-game-backend/services/auth/internal/services/token"
+	"go-game-backend/services/auth/pkg/models"
 )
 
 // Config holds configuration for the authentication service.
@@ -20,51 +23,16 @@ type Config struct {
 	UserCreatedTopic string        `yaml:"user-created-topic"`
 }
 
-type PgStore interface {
-	DoTx(ctx context.Context, f futils.CtxFT[PgRepos]) error
-	Raw() PgRepos
-}
-
-type PgRepos interface {
-	User() UserRepo
-	Outbox() OutboxRepo
-}
-
-type UserRepo interface {
-	AddUser(ctx context.Context, loginToken uuid.UUID) (userID int64, err error)
-	FindUserByLoginToken(ctx context.Context, loginToken uuid.UUID) (userID int64, err error)
-}
-
-type OutboxRepo interface {
-	Add(ctx context.Context, topic string, payload []byte) error
-}
-
-type RxStore interface {
-	DoTx(ctx context.Context, f futils.CtxFT[RxRepos]) error
-	Raw() RxRepos
-}
-
 type PlayerLocker interface {
 	DoWithPlayerLock(ctx context.Context, userID int64, f futils.CtxF) error
-}
-
-type RxRepos interface {
-	Session() SessionRepo
-}
-
-type SessionRepo interface {
-	SetSessionToken(ctx context.Context, userID int64, token uuid.UUID, expiresAt time.Time) error
-	SetRefreshToken(ctx context.Context, token uuid.UUID, sessionInfo dto.SessionInfo, expiresAt time.Time) error
-	RemoveRefreshToken(ctx context.Context, token uuid.UUID) error
-	GetSessionInfo(ctx context.Context, refreshToken uuid.UUID) (dto.SessionInfo, error)
 }
 
 // Service provides authentication related operations such as registration,
 // login and token refresh.
 type Service struct {
 	cfg           *Config
-	pgStore       PgStore
-	rxStore       RxStore
+	pgStore       *postgresstore.Storage[postgresrepo.Repos]
+	rxStore       *redisstore.Storage[redisrepo.Repos]
 	playerLocker  PlayerLocker
 	tokensFactory *tknfactory.TokensFactory
 }
@@ -72,8 +40,8 @@ type Service struct {
 // New creates a new Service instance with the supplied dependencies.
 func New(
 	cfg *Config,
-	pgStore PgStore,
-	rxStore RxStore,
+	pgStore *postgresstore.Storage[postgresrepo.Repos],
+	rxStore *redisstore.Storage[redisrepo.Repos],
 	playerLocker PlayerLocker,
 	tokensFactory *tknfactory.TokensFactory,
 ) *Service {
@@ -91,7 +59,7 @@ func New(
 func (l *Service) Register(ctx context.Context, req *models.RegisterRequest) (resp *models.LoginRespose, err error) {
 	var userID int64
 
-	err = l.pgStore.DoTx(ctx, func(ctx context.Context, r PgRepos) error {
+	err = l.pgStore.DoTx(ctx, func(ctx context.Context, r *postgresrepo.Repos) error {
 		userID, err = r.User().AddUser(ctx, req.LoginToken)
 		if err != nil {
 			return fmt.Errorf("add user failed: %w", err)
@@ -157,7 +125,7 @@ func (l *Service) startSession(ctx context.Context, userID int64) (resp *models.
 	}
 	refreshToken, refreshTokenExpiresAt := l.tokensFactory.CreateRefreshToken(utcNow)
 
-	err = l.rxStore.DoTx(ctx, func(ctx context.Context, r RxRepos) error {
+	err = l.rxStore.DoTx(ctx, func(ctx context.Context, r *redisrepo.Repos) error {
 		err := r.Session().SetSessionToken(ctx, userID, sessionToken, sessionTokenExpiresAt)
 		if err != nil {
 			return fmt.Errorf("set session token: %w", err)
@@ -200,7 +168,7 @@ func (l *Service) RefreshToken(ctx context.Context, req *models.RefreshTokenRequ
 	}
 	refreshToken, refreshTokenExpiresAt := l.tokensFactory.CreateRefreshToken(utcNow)
 
-	err = l.rxStore.DoTx(ctx, func(ctx context.Context, r RxRepos) error {
+	err = l.rxStore.DoTx(ctx, func(ctx context.Context, r *redisrepo.Repos) error {
 		err := r.Session().RemoveRefreshToken(ctx, req.RefreshToken)
 		if err != nil {
 			return fmt.Errorf("removing refresh token failed: %w", err)
