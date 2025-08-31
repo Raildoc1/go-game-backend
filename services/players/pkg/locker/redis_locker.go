@@ -3,9 +3,9 @@ package locker
 
 import (
 	"context"
+	"go-game-backend/pkg/futils"
 	"time"
 
-	"go-game-backend/pkg/futils"
 	redisstore "go-game-backend/pkg/redis"
 	playerredis "go-game-backend/services/players/pkg/redis"
 )

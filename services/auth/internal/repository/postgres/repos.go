@@ -1,8 +1,9 @@
 package postgresrepo
 
 import (
-	"github.com/jackc/pgx/v5/pgxpool"
 	outboxpkg "go-game-backend/pkg/outbox"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Repos aggregates all PostgreSQL repositories used by the auth service.

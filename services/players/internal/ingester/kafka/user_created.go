@@ -3,9 +3,10 @@ package kafkaingester
 import (
 	"context"
 	"encoding/json"
+	"go-game-backend/pkg/logging"
 
 	k "github.com/segmentio/kafka-go"
-	"go-game-backend/pkg/logging"
+
 	authmodels "go-game-backend/services/auth/pkg/models"
 
 	"go.uber.org/zap"

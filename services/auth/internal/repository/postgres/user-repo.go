@@ -4,13 +4,13 @@ package postgresrepo
 import (
 	"context"
 	"fmt"
+	"go-game-backend/services/auth/internal/repository/postgres/sqlc"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	postgresstore "go-game-backend/pkg/postgres"
-	"go-game-backend/services/auth/internal/repository/postgres/sqlc"
 )
 
 // UserRepo provides access to users stored in PostgreSQL.

@@ -4,7 +4,6 @@ package postgresstore
 import (
 	"context"
 	"fmt"
-
 	"go-game-backend/pkg/futils"
 
 	"github.com/jackc/pgx/v5"

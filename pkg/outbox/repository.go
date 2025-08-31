@@ -3,11 +3,10 @@ package outbox
 import (
 	"context"
 	"fmt"
+	"go-game-backend/pkg/outbox/sqlc"
 	postgresstore "go-game-backend/pkg/postgres"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"go-game-backend/pkg/outbox/sqlc"
 )
 
 // Repository provides access to outbox events stored in PostgreSQL.

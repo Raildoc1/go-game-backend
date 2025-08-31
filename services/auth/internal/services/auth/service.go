@@ -5,16 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"go-game-backend/pkg/futils"
-	postgresstore "go-game-backend/pkg/postgres"
-	redisstore "go-game-backend/pkg/redis"
 	"go-game-backend/services/auth/internal/dto"
-	postgresrepo "go-game-backend/services/auth/internal/repository/postgres"
-	redisrepo "go-game-backend/services/auth/internal/repository/redis"
 	"go-game-backend/services/auth/internal/services/token"
 	"go-game-backend/services/auth/pkg/models"
+	"time"
+
+	postgresstore "go-game-backend/pkg/postgres"
+	redisstore "go-game-backend/pkg/redis"
+
+	postgresrepo "go-game-backend/services/auth/internal/repository/postgres"
+	redisrepo "go-game-backend/services/auth/internal/repository/redis"
 )
 
 // Config holds configuration for the authentication service.

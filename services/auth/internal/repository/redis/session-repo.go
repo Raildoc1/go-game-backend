@@ -4,13 +4,13 @@ package redisrepo
 import (
 	"context"
 	"fmt"
+	"go-game-backend/services/auth/internal/dto"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
 	redisstore "go-game-backend/pkg/redis"
-	"go-game-backend/services/auth/internal/dto"
 )
 
 // SessionRepo implements a session repository backed by Redis.
