@@ -85,12 +85,14 @@ func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 
 	rxStorage := redisstore.New(cfg.Redis, logger, redisrepo.NewRepos)
 	defer service.Stop(ctx, rxStorage, "redis storage", logger)
+	rxStore := redisrepo.NewStore(rxStorage)
 
 	pgStorage, err := postgresstore.New(ctx, cfg.Postgres, postgresrepo.NewRepos)
 	if err != nil {
 		return fmt.Errorf("failed to create storage: %w", err)
 	}
 	defer service.Stop(ctx, pgStorage, "postgres storage", logger)
+	pgStore := postgresrepo.NewStore(pgStorage)
 
 	outboxRepo := outboxpkg.NewRepository(pgStorage.Pool())
 	writer := kafka.NewWriter(cfg.Kafka.Brokers)
@@ -99,7 +101,7 @@ func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 
 	playerLocker := playerslocker.NewFromStorage(rxStorage, cfg.AuthService.PlayerLockTTL)
 
-	authService := authsvc.New(cfg.AuthService, pgStorage, rxStorage, playerLocker, tknFactory)
+	authService := authsvc.New(cfg.AuthService, pgStore, rxStore, playerLocker, tknFactory)
 	httpHandler := httphand.New(authService, logger)
 
 	serv := service.NewBuilder().

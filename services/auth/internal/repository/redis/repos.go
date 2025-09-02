@@ -1,10 +1,13 @@
 package redisrepo
 
-import "github.com/redis/go-redis/v9"
+import (
+	"github.com/redis/go-redis/v9"
+	authsvc "go-game-backend/services/auth/internal/services/auth"
+)
 
 // Repos aggregates all Redis-backed repositories used by the auth service.
 type Repos struct {
-	session *SessionRepo
+	session authsvc.SessionRepository
 }
 
 // NewRepos creates Repos with initialized sub-repositories.
@@ -15,6 +18,6 @@ func NewRepos(defaultCmdable redis.Cmdable) *Repos {
 }
 
 // Session returns repository for session data.
-func (r Repos) Session() *SessionRepo {
+func (r Repos) Session() authsvc.SessionRepository {
 	return r.session
 }

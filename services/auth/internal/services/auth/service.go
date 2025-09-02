@@ -9,12 +9,6 @@ import (
 	"go-game-backend/services/auth/internal/services/token"
 	"go-game-backend/services/auth/pkg/models"
 	"time"
-
-	postgresstore "go-game-backend/pkg/postgres"
-	redisstore "go-game-backend/pkg/redis"
-
-	postgresrepo "go-game-backend/services/auth/internal/repository/postgres"
-	redisrepo "go-game-backend/services/auth/internal/repository/redis"
 )
 
 // Config holds configuration for the authentication service.
@@ -31,8 +25,8 @@ type playerLocker interface {
 // login and token refresh.
 type Service struct {
 	cfg           *Config
-	pgStore       *postgresstore.Storage[postgresrepo.Repos]
-	rxStore       *redisstore.Storage[redisrepo.Repos]
+	pgStore       PostgresStore
+	rxStore       RedisStore
 	playerLocker  playerLocker
 	tokensFactory *tknfactory.TokensFactory
 }
@@ -40,8 +34,8 @@ type Service struct {
 // New creates a new Service instance with the supplied dependencies.
 func New(
 	cfg *Config,
-	pgStore *postgresstore.Storage[postgresrepo.Repos],
-	rxStore *redisstore.Storage[redisrepo.Repos],
+	pgStore PostgresStore,
+	rxStore RedisStore,
 	playerLocker playerLocker,
 	tokensFactory *tknfactory.TokensFactory,
 ) *Service {
@@ -59,7 +53,7 @@ func New(
 func (l *Service) Register(ctx context.Context, req *models.RegisterRequest) (resp *models.LoginRespose, err error) {
 	var userID int64
 
-	err = l.pgStore.DoTx(ctx, func(ctx context.Context, r *postgresrepo.Repos) error {
+	err = l.pgStore.DoTx(ctx, func(ctx context.Context, r PostgresRepos) error {
 		userID, err = r.User().AddUser(ctx, req.LoginToken)
 		if err != nil {
 			return fmt.Errorf("add user failed: %w", err)
@@ -124,7 +118,7 @@ func (l *Service) startSession(ctx context.Context, userID int64) (resp *models.
 	}
 	refreshToken, refreshTokenExpiresAt := l.tokensFactory.CreateRefreshToken(utcNow)
 
-	err = l.rxStore.DoTx(ctx, func(ctx context.Context, r *redisrepo.Repos) error {
+	err = l.rxStore.DoTx(ctx, func(ctx context.Context, r RedisRepos) error {
 		err := r.Session().SetSessionToken(ctx, userID, sessionToken, sessionTokenExpiresAt)
 		if err != nil {
 			return fmt.Errorf("set session token: %w", err)
@@ -167,7 +161,7 @@ func (l *Service) RefreshToken(ctx context.Context, req *models.RefreshTokenRequ
 	}
 	refreshToken, refreshTokenExpiresAt := l.tokensFactory.CreateRefreshToken(utcNow)
 
-	err = l.rxStore.DoTx(ctx, func(ctx context.Context, r *redisrepo.Repos) error {
+	err = l.rxStore.DoTx(ctx, func(ctx context.Context, r RedisRepos) error {
 		err := r.Session().RemoveRefreshToken(ctx, req.RefreshToken)
 		if err != nil {
 			return fmt.Errorf("remove refresh token: %w", err)
