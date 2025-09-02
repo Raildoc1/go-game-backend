@@ -2,9 +2,8 @@ package authsvc
 
 import (
 	"context"
-	"time"
-
 	"go-game-backend/services/auth/internal/dto"
+	"time"
 
 	"github.com/google/uuid"
 )

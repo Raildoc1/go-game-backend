@@ -19,6 +19,7 @@ func NewStore(s *postgresstore.Storage[Repos]) *Store {
 
 // DoTx executes a transactional function using repository interfaces.
 func (s *Store) DoTx(ctx context.Context, f func(ctx context.Context, r authsvc.PostgresRepos) error) error {
+	//nolint:wrapcheck // unnecessary
 	return s.inner.DoTx(ctx, func(ctx context.Context, r *Repos) error {
 		return f(ctx, r)
 	})

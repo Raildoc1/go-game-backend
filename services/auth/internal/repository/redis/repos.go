@@ -1,8 +1,9 @@
 package redisrepo
 
 import (
-	"github.com/redis/go-redis/v9"
 	authsvc "go-game-backend/services/auth/internal/services/auth"
+
+	"github.com/redis/go-redis/v9"
 )
 
 // Repos aggregates all Redis-backed repositories used by the auth service.
