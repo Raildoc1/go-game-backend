@@ -6,13 +6,19 @@ http:
   read-header-timeout: 3s
 auth-service:
   player-lock-ttl: 30s
+  user-created-topic: user-created
 redis:
   server-address: redis:6379
 token-factory:
   access-token-ttl: 15m
   refresh-token-ttl: 720h #30 days
-profile-storage-grpc:
-  server-address: profile-storage:9090
+postgres:
+  dsn: postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
+kafka:
+  brokers:
+    - kafka:9092
+  poll-interval: 1s
+  batch-size: 10
 jwt:
   algorithm: HS256
   secret: secret

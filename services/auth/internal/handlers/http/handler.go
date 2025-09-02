@@ -1,3 +1,4 @@
+// Package httphand contains HTTP handlers for the auth service.
 package httphand
 
 import (
@@ -24,8 +25,7 @@ type Handler struct {
 	logger *logging.ZapLogger
 }
 
-// New creates a new HTTP handler with the provided logic implementation and
-// logger.
+// New creates a new HTTP handler with the provided logic implementation and logger.
 func New(logic Logic, logger *logging.ZapLogger) *Handler {
 	return &Handler{
 		logic:  logic,

@@ -1,8 +1,11 @@
+// Package redisstore provides helpers for interacting with Redis, including
+// transaction management and distributed locking.
 package redisstore
 
 import (
 	"context"
 	"fmt"
+	"go-game-backend/pkg/futils"
 	"go-game-backend/pkg/logging"
 	"time"
 
@@ -23,28 +26,34 @@ type Config struct {
 
 // Storage wraps a Redis client and provides helpers for executing commands
 // and managing distributed locks.
-type Storage struct {
+type Storage[TRepos any] struct {
 	cfg    *Config
 	rdb    *redis.Client
 	locker *redislock.Client
 	logger *logging.ZapLogger
+	repos  *TRepos
 }
 
 // New creates a Storage instance configured with the provided settings and
 // logger.
-func New(cfg *Config, logger *logging.ZapLogger) *Storage {
+func New[TRepos any](
+	cfg *Config,
+	logger *logging.ZapLogger,
+	factory func(redis.Cmdable) *TRepos,
+) *Storage[TRepos] {
 	rdb := redis.NewClient(&redis.Options{Addr: cfg.ServerAddr})
 	locker := redislock.New(rdb)
-	return &Storage{
+	return &Storage[TRepos]{
 		cfg:    cfg,
 		rdb:    rdb,
 		locker: locker,
 		logger: logger,
+		repos:  factory(rdb),
 	}
 }
 
 // Stop closes the underlying Redis client connection.
-func (s *Storage) Stop() error {
+func (s *Storage[TRepos]) Stop() error {
 	err := s.rdb.Close()
 	if err != nil {
 		return fmt.Errorf("failed to close redis connection: %w", err)
@@ -52,13 +61,13 @@ func (s *Storage) Stop() error {
 	return nil
 }
 
-// DoWithTransaction executes the provided function within a Redis transaction
+// DoTx executes the provided function within a Redis transaction
 // context.
-func (s *Storage) DoWithTransaction(ctx context.Context, f func(ctx context.Context) error) error {
+func (s *Storage[TRepos]) DoTx(ctx context.Context, f futils.CtxFT[*TRepos]) error {
 	_, err := s.rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
 		ctxWithPipe := context.WithValue(ctx, redisPipelineKey, pipe)
 
-		return f(ctxWithPipe)
+		return f(ctxWithPipe, s.repos)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute transaction: %w", err)
@@ -66,30 +75,14 @@ func (s *Storage) DoWithTransaction(ctx context.Context, f func(ctx context.Cont
 	return nil
 }
 
-// Do executes the provided function with a Redis Cmdable derived from the
-// context.
-func (s *Storage) Do(ctx context.Context, f func(ctx context.Context, cmdable redis.Cmdable) error) error {
-	cmdable, err := s.getCmdFromCtx(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve cmdable: %w", err)
-	}
-
-	err = f(ctx, cmdable)
-	if err != nil {
-		return err
-	}
-
-	return nil
+// Raw returns Repos that performs queries without transaction
+func (s *Storage[TRepos]) Raw() *TRepos {
+	return s.repos
 }
 
 // DoWithLock obtains a distributed lock for the specified key and executes the
 // supplied function while holding the lock.
-func (s *Storage) DoWithLock(
-	ctx context.Context,
-	key string,
-	ttl time.Duration,
-	f func(ctx context.Context) error,
-) error {
+func (s *Storage[TRepos]) DoWithLock(ctx context.Context, key string, ttl time.Duration, f futils.CtxF) error {
 	lock, err := s.locker.Obtain(ctx, key, ttl, nil)
 	if err != nil {
 		return fmt.Errorf("failed to obtain lock: %w", err)
@@ -112,14 +105,9 @@ func (s *Storage) DoWithLock(
 	return nil
 }
 
-func (s *Storage) getCmdFromCtx(ctx context.Context) (redis.Cmdable, error) {
-	p := ctx.Value(redisPipelineKey)
-	if p == nil {
-		return s.rdb, nil
+func cmdableFromCtx(ctx context.Context) redis.Cmdable {
+	if p, ok := ctx.Value(redisPipelineKey).(redis.Pipeliner); ok {
+		return p
 	}
-	pipe, ok := p.(redis.Pipeliner)
-	if !ok {
-		return nil, fmt.Errorf("invalid redis pipeliner in context")
-	}
-	return pipe, nil
+	return nil
 }

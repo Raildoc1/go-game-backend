@@ -1,10 +1,13 @@
+// Package main starts the authentication service.
 package main
 
 import (
 	"context"
 	"fmt"
 	"go-game-backend/pkg/jwtfactory"
+	"go-game-backend/pkg/kafka"
 	"go-game-backend/pkg/logging"
+	outboxpkg "go-game-backend/pkg/outbox"
 	"go-game-backend/pkg/service"
 	"log"
 	"net/http"
@@ -14,27 +17,29 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/jwtauth/v5"
 
+	postgresstore "go-game-backend/pkg/postgres"
 	redisstore "go-game-backend/pkg/redis"
-
-	profilestoragegrpc "go-game-backend/services/auth/internal/gateway/profilestorage/grpc"
 	httphand "go-game-backend/services/auth/internal/handlers/http"
+	postgresrepo "go-game-backend/services/auth/internal/repository/postgres"
 	redisrepo "go-game-backend/services/auth/internal/repository/redis"
-	authserv "go-game-backend/services/auth/internal/services/auth"
+	authsvc "go-game-backend/services/auth/internal/services/auth"
 	tknfactory "go-game-backend/services/auth/internal/services/token"
+	playerslocker "go-game-backend/services/players/pkg/locker"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 // Config holds the configuration for the auth service.
 type Config struct {
-	Service            *service.Config            `yaml:"service"`
-	HTTP               *service.HTTPServerConfig  `yaml:"http"`
-	AuthService        *authserv.Config           `yaml:"auth-service"`
-	Redis              *redisstore.Config         `yaml:"redis"`
-	TokenFactory       *tknfactory.Config         `yaml:"token-factory"`
-	ProfileStorageGRPC *profilestoragegrpc.Config `yaml:"profile-storage-grpc"`
-	JWTConfig          *JWTConfig                 `yaml:"jwt"`
-	ShutdownTimeout    time.Duration              `yaml:"shutdown-timeout"`
+	Service         *service.Config           `yaml:"service"`
+	HTTP            *service.HTTPServerConfig `yaml:"http"`
+	AuthService     *authsvc.Config           `yaml:"auth-service"`
+	Redis           *redisstore.Config        `yaml:"redis"`
+	TokenFactory    *tknfactory.Config        `yaml:"token-factory"`
+	Postgres        *postgresstore.Config     `yaml:"postgres"`
+	Kafka           *kafka.ForwarderConfig    `yaml:"kafka"`
+	JWTConfig       *JWTConfig                `yaml:"jwt"`
+	ShutdownTimeout time.Duration             `yaml:"shutdown-timeout"`
 }
 
 // JWTConfig holds the configuration for the JWT generation.
@@ -68,6 +73,7 @@ func main() {
 
 	if err = run(ctx, cfg, logger); err != nil {
 		logger.ErrorCtx(ctx, "application stopped with error", zap.Error(err))
+		os.Exit(1)
 	}
 	logger.InfoCtx(ctx, "application stopped successfully")
 }
@@ -77,21 +83,32 @@ func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 	jwtFactory := jwtfactory.New(tokenAuth)
 	tknFactory := tknfactory.New(jwtFactory, cfg.TokenFactory)
 
-	redisStore := redisstore.New(cfg.Redis, logger)
-	defer service.Stop(ctx, redisStore, "redis storage", logger)
+	rxStorage := redisstore.New(cfg.Redis, logger, redisrepo.NewRepos)
+	defer service.Stop(ctx, rxStorage, "redis storage", logger)
+	rxStore := redisrepo.NewStore(rxStorage)
 
-	redisRepo := redisrepo.New(redisStore)
-
-	profileStorageGateway, err := profilestoragegrpc.New(cfg.ProfileStorageGRPC)
+	pgStorage, err := postgresstore.New(ctx, cfg.Postgres, postgresrepo.NewRepos)
 	if err != nil {
-		return fmt.Errorf("failed to create profile storage gateway: %w", err)
+		return fmt.Errorf("failed to create storage: %w", err)
 	}
-	defer service.Stop(ctx, profileStorageGateway, "profile storage gateway", logger)
+	defer service.Stop(ctx, pgStorage, "postgres storage", logger)
+	pgStore := postgresrepo.NewStore(pgStorage)
 
-	authService := authserv.New(cfg.AuthService, profileStorageGateway, redisRepo, tknFactory)
+	outboxRepo := outboxpkg.NewRepository(pgStorage.Pool())
+	writer := kafka.NewWriter(cfg.Kafka.Brokers)
+	defer service.Close(ctx, writer, "kafka writer", logger)
+	forwarder := outboxpkg.NewForwarder(outboxRepo, writer, cfg.Kafka.PollInterval, cfg.Kafka.BatchSize)
+
+	playerLocker := playerslocker.NewFromStorage(rxStorage, cfg.AuthService.PlayerLockTTL)
+
+	authService := authsvc.New(cfg.AuthService, pgStore, rxStore, playerLocker, tknFactory)
 	httpHandler := httphand.New(authService, logger)
 
 	serv := service.NewBuilder().
+		WithGo(func(ctx context.Context) error {
+			forwarder.Run(ctx)
+			return nil
+		}).
 		WithHTTPServer(cfg.HTTP, func() http.Handler {
 			router := gin.Default()
 

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"net/http"
 
 	"google.golang.org/grpc"
@@ -18,6 +19,7 @@ type Config struct {
 type Builder struct {
 	httpServerSetup *httpServerSetup
 	grpcServerSetup *grpcServerSetup
+	goFuncs         []func(context.Context) error
 }
 
 // NewBuilder creates a new empty Builder instance.
@@ -51,10 +53,17 @@ func (b *Builder) WithGRPCServer(
 	return b
 }
 
+// WithGo registers a function to run in a separate goroutine managed by the service.
+func (b *Builder) WithGo(f func(context.Context) error) *Builder {
+	b.goFuncs = append(b.goFuncs, f)
+	return b
+}
+
 // Build constructs a Service based on the options configured on the Builder.
 func (b *Builder) Build() *Service {
 	return newService(
 		b.httpServerSetup,
 		b.grpcServerSetup,
+		b.goFuncs,
 	)
 }

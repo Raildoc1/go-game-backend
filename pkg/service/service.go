@@ -49,15 +49,18 @@ type grpcServerSetup struct {
 type Service struct {
 	httpServerSetup *httpServerSetup
 	grpcServerSetup *grpcServerSetup
+	goFuncs         []func(context.Context) error
 }
 
 func newService(
 	httpServerSetup *httpServerSetup,
 	grpcServerSetup *grpcServerSetup,
+	goFuncs []func(context.Context) error,
 ) *Service {
 	return &Service{
 		httpServerSetup: httpServerSetup,
 		grpcServerSetup: grpcServerSetup,
+		goFuncs:         goFuncs,
 	}
 }
 
@@ -139,6 +142,11 @@ func (s *Service) Run(rootCtx context.Context, shutdownTimeout time.Duration) er
 			grpcServer.GracefulStop()
 			return nil
 		})
+	}
+
+	for _, f := range s.goFuncs {
+		fn := f
+		g.Go(func() error { return fn(errGroupCtx) })
 	}
 
 	err := g.Wait()
