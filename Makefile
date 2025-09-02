@@ -48,8 +48,8 @@ gen_sqlc:
 	docker run -t --rm                                \
 		-v $(CURDIR):/app                             \
 		-w /app                                       \
-		sqlc/sqlc generate -f services/auth/sqlc.yaml
+		sqlc/sqlc:1.30.0 generate -f services/auth/sqlc.yaml
 	docker run -t --rm                                \
 		-v $(CURDIR):/app                             \
 		-w /app                                       \
-		sqlc/sqlc generate -f pkg/outbox/sqlc.yaml
+		sqlc/sqlc:1.30.0 generate -f pkg/outbox/sqlc.yaml
