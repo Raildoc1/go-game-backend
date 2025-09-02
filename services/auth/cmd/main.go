@@ -22,7 +22,7 @@ import (
 	httphand "go-game-backend/services/auth/internal/handlers/http"
 	postgresrepo "go-game-backend/services/auth/internal/repository/postgres"
 	redisrepo "go-game-backend/services/auth/internal/repository/redis"
-	authserv "go-game-backend/services/auth/internal/services/auth"
+	authsvc "go-game-backend/services/auth/internal/services/auth"
 	tknfactory "go-game-backend/services/auth/internal/services/token"
 	playerslocker "go-game-backend/services/players/pkg/locker"
 	"go.uber.org/zap"
@@ -33,7 +33,7 @@ import (
 type Config struct {
 	Service         *service.Config           `yaml:"service"`
 	HTTP            *service.HTTPServerConfig `yaml:"http"`
-	AuthService     *authserv.Config          `yaml:"auth-service"`
+	AuthService     *authsvc.Config           `yaml:"auth-service"`
 	Redis           *redisstore.Config        `yaml:"redis"`
 	TokenFactory    *tknfactory.Config        `yaml:"token-factory"`
 	Postgres        *postgresstore.Config     `yaml:"postgres"`
@@ -99,7 +99,7 @@ func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 
 	playerLocker := playerslocker.NewFromStorage(rxStorage, cfg.AuthService.PlayerLockTTL)
 
-	authService := authserv.New(cfg.AuthService, pgStorage, rxStorage, playerLocker, tknFactory)
+	authService := authsvc.New(cfg.AuthService, pgStorage, rxStorage, playerLocker, tknFactory)
 	httpHandler := httphand.New(authService, logger)
 
 	serv := service.NewBuilder().

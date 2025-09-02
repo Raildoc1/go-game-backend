@@ -1,5 +1,5 @@
-// Package authserv contains the core authentication service logic.
-package authserv
+// Package authsvc contains the core authentication service logic.
+package authsvc
 
 import (
 	"context"
@@ -78,7 +78,7 @@ func (l *Service) Register(ctx context.Context, req *models.RegisterRequest) (re
 
 	sessionInfo, err := l.startSessionWithPlayerLock(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("start session: %w", err)
+		return nil, fmt.Errorf("start session with player lock: %w", err)
 	}
 
 	return sessionInfo, nil
@@ -88,12 +88,12 @@ func (l *Service) Register(ctx context.Context, req *models.RegisterRequest) (re
 func (l *Service) Login(ctx context.Context, req *models.LoginRequest) (resp *models.LoginRespose, err error) {
 	userID, err := l.pgStore.Raw().User().FindUserByLoginToken(ctx, req.LoginToken)
 	if err != nil {
-		return nil, fmt.Errorf("find user failed: %w", err)
+		return nil, fmt.Errorf("find user: %w", err)
 	}
 
 	sessionInfo, err := l.startSessionWithPlayerLock(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("create session failed: %w", err)
+		return nil, fmt.Errorf("start session with player lock: %w", err)
 	}
 
 	return sessionInfo, nil
@@ -158,29 +158,29 @@ func (l *Service) RefreshToken(ctx context.Context, req *models.RefreshTokenRequ
 
 	sessionInfo, err := l.rxStore.Raw().Session().GetSessionInfo(ctx, req.RefreshToken)
 	if err != nil {
-		return nil, fmt.Errorf("getting session info failed: %w", err)
+		return nil, fmt.Errorf("get session info: %w", err)
 	}
 
 	accessToken, expiresAt, err := l.tokensFactory.CreateAccessToken(sessionInfo.UserID, sessionInfo.SessionToken, utcNow)
 	if err != nil {
-		return nil, fmt.Errorf("token creation failed: %w", err)
+		return nil, fmt.Errorf("creation access token: %w", err)
 	}
 	refreshToken, refreshTokenExpiresAt := l.tokensFactory.CreateRefreshToken(utcNow)
 
 	err = l.rxStore.DoTx(ctx, func(ctx context.Context, r *redisrepo.Repos) error {
 		err := r.Session().RemoveRefreshToken(ctx, req.RefreshToken)
 		if err != nil {
-			return fmt.Errorf("removing refresh token failed: %w", err)
+			return fmt.Errorf("remove refresh token: %w", err)
 		}
 
 		err = r.Session().SetRefreshToken(ctx, refreshToken, sessionInfo, refreshTokenExpiresAt)
 		if err != nil {
-			return fmt.Errorf("refresh token saving failed: %w", err)
+			return fmt.Errorf("set refresh token: %w", err)
 		}
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("refresh token transaction failed: %w", err)
+		return nil, fmt.Errorf("rx transaction: %w", err)
 	}
 
 	resp = &models.LoginRespose{
