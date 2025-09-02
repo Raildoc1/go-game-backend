@@ -34,5 +34,5 @@ func NewFromStorage[T any](store *redisstore.Storage[T], ttl time.Duration) *Red
 // DoWithPlayerLock obtains a lock for the given user ID and executes f.
 func (l *RedisPlayerLocker) DoWithPlayerLock(ctx context.Context, userID int64, f futils.CtxF) error {
 	key := playerredis.PlayerLockKey(userID)
-	return l.store.DoWithLock(ctx, key, l.ttl, f)
+	return l.store.DoWithLock(ctx, key, l.ttl, f) //nolint:wrapcheck // unnecessary
 }

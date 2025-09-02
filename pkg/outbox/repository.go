@@ -2,6 +2,7 @@ package outbox
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"go-game-backend/pkg/outbox/sqlc"
 	postgresstore "go-game-backend/pkg/postgres"
@@ -19,7 +20,7 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 	return &Repository{BaseRepo: postgresstore.NewBaseRepo(sqlc.New(pool))}
 }
 
-// Add inserts a new event into the outbox table within the provided transaction.
+// Add inserts a new event into the outbox table.
 func (r *Repository) Add(ctx context.Context, topic string, payload []byte) error {
 	if err := r.Q(ctx).AddEvent(ctx, sqlc.AddEventParams{Topic: topic, Payload: payload}); err != nil {
 		return fmt.Errorf("insert outbox event: %w", err)
@@ -27,9 +28,21 @@ func (r *Repository) Add(ctx context.Context, topic string, payload []byte) erro
 	return nil
 }
 
+// AddJSON inserts a new event into the outbox table, converting payload to JSON.
+func (r *Repository) AddJSON(ctx context.Context, topic string, payload any) error {
+	js, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("marshal payload: %w", err)
+	}
+	if err := r.Q(ctx).AddEvent(ctx, sqlc.AddEventParams{Topic: topic, Payload: js}); err != nil {
+		return fmt.Errorf("insert outbox event: %w", err)
+	}
+	return nil
+}
+
 // Fetch returns a batch of unprocessed events.
-func (r *Repository) Fetch(ctx context.Context, limit int) ([]Event, error) {
-	rows, err := r.Q(ctx).FetchEvents(ctx, int32(limit))
+func (r *Repository) Fetch(ctx context.Context, limit int32) ([]Event, error) {
+	rows, err := r.Q(ctx).FetchEvents(ctx, limit)
 	if err != nil {
 		return nil, fmt.Errorf("query outbox events: %w", err)
 	}

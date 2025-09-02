@@ -1,8 +1,10 @@
+// Package kafkaingester consumes Kafka events
 package kafkaingester
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"go-game-backend/pkg/logging"
 
 	k "github.com/segmentio/kafka-go"
@@ -25,11 +27,10 @@ func NewUserCreated(reader *k.Reader, logger *logging.ZapLogger) *UserCreated {
 
 // Run starts consuming user-created events until the context is done.
 func (i *UserCreated) Run(ctx context.Context) error {
-	defer i.reader.Close()
 	for {
 		m, err := i.reader.ReadMessage(ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("read kafka message: %w", err)
 		}
 		var evt authmodels.UserCreatedEvent
 		if err := json.Unmarshal(m.Value, &evt); err != nil {

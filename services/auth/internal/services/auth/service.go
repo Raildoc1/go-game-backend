@@ -3,7 +3,6 @@ package authserv
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"go-game-backend/pkg/futils"
 	"go-game-backend/services/auth/internal/dto"
@@ -24,7 +23,7 @@ type Config struct {
 	UserCreatedTopic string        `yaml:"user-created-topic"`
 }
 
-type PlayerLocker interface {
+type playerLocker interface {
 	DoWithPlayerLock(ctx context.Context, userID int64, f futils.CtxF) error
 }
 
@@ -34,7 +33,7 @@ type Service struct {
 	cfg           *Config
 	pgStore       *postgresstore.Storage[postgresrepo.Repos]
 	rxStore       *redisstore.Storage[redisrepo.Repos]
-	playerLocker  PlayerLocker
+	playerLocker  playerLocker
 	tokensFactory *tknfactory.TokensFactory
 }
 
@@ -43,7 +42,7 @@ func New(
 	cfg *Config,
 	pgStore *postgresstore.Storage[postgresrepo.Repos],
 	rxStore *redisstore.Storage[redisrepo.Repos],
-	playerLocker PlayerLocker,
+	playerLocker playerLocker,
 	tokensFactory *tknfactory.TokensFactory,
 ) *Service {
 	return &Service{
@@ -65,22 +64,21 @@ func (l *Service) Register(ctx context.Context, req *models.RegisterRequest) (re
 		if err != nil {
 			return fmt.Errorf("add user failed: %w", err)
 		}
-		payload, err := json.Marshal(models.UserCreatedEvent{UserID: userID})
-		if err != nil {
-			return fmt.Errorf("marshal event: %w", err)
-		}
-		if err := r.Outbox().Add(ctx, l.cfg.UserCreatedTopic, payload); err != nil {
+
+		ev := models.UserCreatedEvent{UserID: userID}
+		if err := r.Outbox().AddJSON(ctx, l.cfg.UserCreatedTopic, ev); err != nil {
 			return fmt.Errorf("save outbox event: %w", err)
 		}
+
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("pg transaction: %w", err)
 	}
 
 	sessionInfo, err := l.startSessionWithPlayerLock(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("create session failed: %w", err)
+		return nil, fmt.Errorf("start session: %w", err)
 	}
 
 	return sessionInfo, nil

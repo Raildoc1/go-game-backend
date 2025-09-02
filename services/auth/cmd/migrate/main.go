@@ -43,7 +43,7 @@ func main() {
 		zap.String("version", cfg.Service.Version),
 	)
 
-	if err = run(ctx, cfg, logger); err != nil {
+	if err = run(cfg); err != nil {
 		logger.ErrorCtx(ctx, "migration failed", zap.Error(err))
 		os.Exit(1)
 	}
@@ -51,7 +51,7 @@ func main() {
 }
 
 // run executes the database migrations.
-func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
+func run(cfg *Config) error {
 	migrator := postgresstore.NewMigrator(cfg.Postgres)
 	if err := migrator.Migrate(migrations.Files, "."); err != nil {
 		return fmt.Errorf("storage migration: %w", err)

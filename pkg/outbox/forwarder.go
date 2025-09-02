@@ -2,6 +2,7 @@ package outbox
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/segmentio/kafka-go"
@@ -12,11 +13,11 @@ type Forwarder struct {
 	store        *Repository
 	writer       *kafka.Writer
 	pollInterval time.Duration
-	batchSize    int
+	batchSize    int32
 }
 
 // NewForwarder creates a new Forwarder instance.
-func NewForwarder(store *Repository, writer *kafka.Writer, pollInterval time.Duration, batchSize int) *Forwarder {
+func NewForwarder(store *Repository, writer *kafka.Writer, pollInterval time.Duration, batchSize int32) *Forwarder {
 	return &Forwarder{store: store, writer: writer, pollInterval: pollInterval, batchSize: batchSize}
 }
 
@@ -44,10 +45,10 @@ func (f *Forwarder) processBatch(ctx context.Context) error {
 		msg := kafka.Message{Topic: e.Topic, Value: e.Payload}
 		if err := f.writer.WriteMessages(ctx, msg); err != nil {
 			// if publishing fails, stop processing to retry later
-			return err
+			return fmt.Errorf("write messages: %w", err)
 		}
 		if err := f.store.MarkProcessed(ctx, e.ID); err != nil {
-			return err
+			return fmt.Errorf("mark processed: %w", err)
 		}
 	}
 	return nil

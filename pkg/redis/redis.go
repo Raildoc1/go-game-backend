@@ -75,6 +75,7 @@ func (s *Storage[TRepos]) DoTx(ctx context.Context, f futils.CtxFT[*TRepos]) err
 	return nil
 }
 
+// Raw returns Repos that performs queries without transaction
 func (s *Storage[TRepos]) Raw() *TRepos {
 	return s.repos
 }
@@ -105,8 +106,8 @@ func (s *Storage[TRepos]) DoWithLock(ctx context.Context, key string, ttl time.D
 }
 
 func cmdableFromCtx(ctx context.Context) redis.Cmdable {
-	if p := ctx.Value(redisPipelineKey); p != nil {
-		return p.(redis.Pipeliner)
+	if p, ok := ctx.Value(redisPipelineKey).(redis.Pipeliner); ok {
+		return p
 	}
 	return nil
 }

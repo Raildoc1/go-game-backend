@@ -1,3 +1,4 @@
+// Package kafka provides helpers and config for interacting with Kafka
 package kafka
 
 import (
@@ -10,7 +11,7 @@ import (
 type ForwarderConfig struct {
 	Brokers      []string      `yaml:"brokers"`
 	PollInterval time.Duration `yaml:"poll-interval"`
-	BatchSize    int           `yaml:"batch-size"`
+	BatchSize    int32         `yaml:"batch-size"`
 }
 
 // ReaderConfig contains Kafka reader settings.
@@ -22,7 +23,11 @@ type ReaderConfig struct {
 
 // NewWriter creates a kafka writer for the given brokers.
 func NewWriter(brokers []string) *k.Writer {
-	return &k.Writer{Addr: k.TCP(brokers...)}
+	return &k.Writer{
+		Addr:                   k.TCP(brokers...),
+		AllowAutoTopicCreation: false,
+		RequiredAcks:           k.RequireAll,
+	}
 }
 
 // NewReader creates a kafka reader from the provided configuration.

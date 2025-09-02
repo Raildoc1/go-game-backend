@@ -73,6 +73,7 @@ func main() {
 
 	if err = run(ctx, cfg, logger); err != nil {
 		logger.ErrorCtx(ctx, "application stopped with error", zap.Error(err))
+		os.Exit(1)
 	}
 	logger.InfoCtx(ctx, "application stopped successfully")
 }
@@ -93,7 +94,7 @@ func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 
 	outboxRepo := outboxpkg.NewRepository(pgStorage.Pool())
 	writer := kafka.NewWriter(cfg.Kafka.Brokers)
-	defer writer.Close()
+	defer service.Close(ctx, writer, "kafka writer", logger)
 	forwarder := outboxpkg.NewForwarder(outboxRepo, writer, cfg.Kafka.PollInterval, cfg.Kafka.BatchSize)
 
 	playerLocker := playerslocker.NewFromStorage(rxStorage, cfg.AuthService.PlayerLockTTL)
