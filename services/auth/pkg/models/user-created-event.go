@@ -2,5 +2,6 @@ package models
 
 // UserCreatedEvent represents payload for user-created events.
 type UserCreatedEvent struct {
-	UserID int64 `json:"user_id"`
+	UserID   int64  `json:"user_id"`
+	Nickname string `json:"nickname"`
 }

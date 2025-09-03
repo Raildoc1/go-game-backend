@@ -4,9 +4,18 @@ http:
   address: :8080
   shutdown-timeout: 5s
   read-header-timeout: 3s
+player-service:
+  player-lock-ttl: 30s
+redis:
+  server-address: redis:6379
+postgres:
+  dsn: postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
 kafka:
   brokers:
     - kafka:9092
   topic: user-created
   group-id: players-service
+jwt:
+  algorithm: HS256
+  secret: secret
 shutdown-timeout: 5s

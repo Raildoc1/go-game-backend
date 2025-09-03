@@ -7,13 +7,26 @@ import (
 	"go-game-backend/pkg/kafka"
 	"go-game-backend/pkg/logging"
 	"go-game-backend/pkg/service"
-	playerkafka "go-game-backend/services/players/internal/ingester/kafka"
+	"go-game-backend/services/players/internal/middleware"
+	"go-game-backend/services/players/internal/ws"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	postgresstore "go-game-backend/pkg/postgres"
+	redisstore "go-game-backend/pkg/redis"
+
+	httphand "go-game-backend/services/players/internal/handlers/http"
+	playerkafka "go-game-backend/services/players/internal/ingester/kafka"
+
+	postgresrepo "go-game-backend/services/players/internal/repository/postgres"
+	redisrepo "go-game-backend/services/players/internal/repository/redis"
+	playersvc "go-game-backend/services/players/internal/services/player"
+
+	playerslocker "go-game-backend/services/players/pkg/locker"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -23,7 +36,11 @@ import (
 type Config struct {
 	Service         *service.Config           `yaml:"service"`
 	HTTP            *service.HTTPServerConfig `yaml:"http"`
+	PlayerService   *playersvc.Config         `yaml:"player-service"`
+	Redis           *redisstore.Config        `yaml:"redis"`
+	Postgres        *postgresstore.Config     `yaml:"postgres"`
 	Kafka           *kafka.ReaderConfig       `yaml:"kafka"`
+	JWT             *middleware.JWTConfig     `yaml:"jwt"`
 	ShutdownTimeout time.Duration             `yaml:"shutdown-timeout"`
 }
 
@@ -58,9 +75,28 @@ func main() {
 }
 
 func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
+	rxStorage := redisstore.New(cfg.Redis, logger, redisrepo.NewRepos)
+	defer service.Stop(ctx, rxStorage, "redis storage", logger)
+	rxStore := redisrepo.NewStore(rxStorage)
+
+	pgStorage, err := postgresstore.New(ctx, cfg.Postgres, postgresrepo.NewRepos)
+	if err != nil {
+		return fmt.Errorf("create postgres storage: %w", err)
+	}
+	defer service.Stop(ctx, pgStorage, "postgres storage", logger)
+	pgStore := postgresrepo.NewStore(pgStorage)
+
+	locker := playerslocker.NewFromStorage(rxStorage, cfg.PlayerService.PlayerLockTTL)
+	playerService := playersvc.New(cfg.PlayerService, pgStore)
+
+	hub := ws.NewHub()
+	validator := middleware.NewSessionValidator(cfg.JWT, rxStore.Raw().Session(), logger)
+	lockMw := middleware.NewPlayerLock(locker)
+	httpHandler := httphand.New(playerService, hub, logger)
+
 	reader := kafka.NewReader(cfg.Kafka)
 	defer service.Close(ctx, reader, "kafka reader", logger)
-	ing := playerkafka.NewUserCreated(reader, logger)
+	ing := playerkafka.NewUserCreated(reader, logger, playerService, hub, locker)
 
 	serv := service.NewBuilder().
 		WithGo(func(ctx context.Context) error {
@@ -72,9 +108,10 @@ func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 		WithHTTPServer(cfg.HTTP, func() http.Handler {
 			router := gin.Default()
 
-			api := router.Group("/api/v1")
+			api := router.Group("/api/v1", validator.Middleware(), lockMw.Middleware())
 			{
-				_ = api
+				api.GET("/initial-state", httpHandler.GetInitialState)
+				api.GET("/ws", httpHandler.WS)
 			}
 
 			return router

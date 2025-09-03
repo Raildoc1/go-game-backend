@@ -59,7 +59,7 @@ func (l *Service) Register(ctx context.Context, req *models.RegisterRequest) (re
 			return fmt.Errorf("add user failed: %w", err)
 		}
 
-		ev := models.UserCreatedEvent{UserID: userID}
+		ev := models.UserCreatedEvent{UserID: userID, Nickname: req.Nickname}
 		if err := r.Outbox().AddJSON(ctx, l.cfg.UserCreatedTopic, ev); err != nil {
 			return fmt.Errorf("save outbox event: %w", err)
 		}
