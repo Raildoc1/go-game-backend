@@ -1,34 +1,35 @@
-package httphand
+package statehand
 
 import (
 	"context"
 	"go-game-backend/pkg/logging"
 	"go-game-backend/services/players/internal/middleware"
-	"go-game-backend/services/players/internal/ws"
 	"go-game-backend/services/players/pkg/models"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 
 	"go.uber.org/zap"
 )
 
-// Logic defines business logic required by handler.
 type Logic interface {
 	GetInitialState(ctx context.Context, userID int64) (*models.InitialState, error)
+	GetStateDelta(ctx context.Context, userID int64, fromStateID int) ([]any, error)
 }
 
-// Handler provides HTTP endpoints for players service.
+// Handler provides HTTP endpoints for getting player state.
 type Handler struct {
 	logic  Logic
-	hub    *ws.Hub
 	logger *logging.ZapLogger
 }
 
-// New creates new handler.
-func New(logic Logic, hub *ws.Hub, logger *logging.ZapLogger) *Handler {
-	return &Handler{logic: logic, hub: hub, logger: logger}
+func New(logic Logic,logger *logging.ZapLogger) *Handler {
+	return &Handler{logic: logic, logger: logger}
+}
+
+func (h *Handler) Register(r gin.IRouter) {
+	r.GET("/initial", h.GetInitialState)
+	r.GET("/delta/:from_state_id", h.GetInitialState)
 }
 
 // GetInitialState handles initial state requests.
@@ -43,13 +44,15 @@ func (h *Handler) GetInitialState(c *gin.Context) {
 	c.JSON(http.StatusOK, state)
 }
 
-// WS upgrades connection to websocket and registers it.
-func (h *Handler) WS(c *gin.Context) {
+// GetStateDelta handles state delta requests.
+func (h *Handler) GetStateDelta(c *gin.Context) {
 	userID := c.GetInt64(middleware.UserIDCtxKey)
-	upgrader := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	fromStateID := c.GetInt("from_state_id")
+	deltas, err := h.logic.GetStateDelta(c, userID, fromStateID)
 	if err != nil {
+		h.logger.ErrorCtx(c.Request.Context(), "get state delta", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
 		return
 	}
-	h.hub.Add(userID, conn)
+	c.JSON(http.StatusOK, deltas)
 }

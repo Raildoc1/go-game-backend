@@ -8,7 +8,6 @@ import (
 	"go-game-backend/pkg/logging"
 	"go-game-backend/pkg/service"
 	"go-game-backend/services/players/internal/middleware"
-	"go-game-backend/services/players/internal/ws"
 	"log"
 	"net/http"
 	"os"
@@ -19,7 +18,7 @@ import (
 	postgresstore "go-game-backend/pkg/postgres"
 	redisstore "go-game-backend/pkg/redis"
 
-	httphand "go-game-backend/services/players/internal/handlers/http"
+	statehand "go-game-backend/services/players/internal/handlers/state"
 	playerkafka "go-game-backend/services/players/internal/ingester/kafka"
 
 	postgresrepo "go-game-backend/services/players/internal/repository/postgres"
@@ -89,10 +88,10 @@ func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 	locker := playerslocker.NewFromStorage(rxStorage, cfg.PlayerService.PlayerLockTTL)
 	playerService := playersvc.New(cfg.PlayerService, pgStore)
 
-	hub := ws.NewHub()
 	validator := middleware.NewSessionValidator(cfg.JWT, rxStore.Raw().Session(), logger)
 	lockMw := middleware.NewPlayerLock(locker)
-	httpHandler := httphand.New(playerService, hub, logger)
+
+	stateHTTPHandler := statehand.New(playerService, logger)
 
 	reader := kafka.NewReader(cfg.Kafka)
 	defer service.Close(ctx, reader, "kafka reader", logger)
@@ -108,10 +107,12 @@ func run(ctx context.Context, cfg *Config, logger *logging.ZapLogger) error {
 		WithHTTPServer(cfg.HTTP, func() http.Handler {
 			router := gin.Default()
 
-			api := router.Group("/api/v1", validator.Middleware(), lockMw.Middleware())
+			api := router.Group("/api/v1", validator.Middleware())
 			{
-				api.GET("/initial-state", httpHandler.GetInitialState)
-				api.GET("/ws", httpHandler.WS)
+				playerAPI := api.Group("/player", lockMw.Middleware())
+				{
+					stateHTTPHandler.Register(playerAPI.Group("/state"))
+				}
 			}
 
 			return router

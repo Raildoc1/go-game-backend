@@ -11,3 +11,9 @@ type InitialState struct {
 	Nickname string      `json:"nickname"`
 	Wallet   WalletState `json:"wallet"`
 }
+
+// WalletDelta represents player's wallet state delta.
+type WalletDelta struct {
+	SoftDelta int64 `json:"soft_delta"`
+	HardDelta int64 `json:"hard_delta"`
+}
